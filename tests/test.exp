@@ -1,0 +1,12 @@
+
+expand fun="TEST_FUNCTION" args=[int x, int y]
+{
+  a = 3+ 5 * 7;
+  assert a == b + c;
+  b += x % 2;
+  lst = [[[x, 1], 3], [[[[3,5], []]], 0]];
+
+  if a == 1
+    generate "XXX";
+  generate "TEST (%1, %2, %3)" % [a, b, x+y];
+}

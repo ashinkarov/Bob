@@ -1,0 +1,17 @@
+
+expand fun="X" args=[]
+{
+  x = x + (x = 5);
+  a = b[32+7][2];
+  a = 3 > 2 ? 2 > 3 ? 1 : 2: 3;
+  if (3 > 2)
+    {
+      a = b + c;
+    }
+  else if (a > 0)
+    {
+      b = c + d;
+    }
+  else
+    generate "error";
+}

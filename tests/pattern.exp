@@ -1,0 +1,141 @@
+/* This is an expansion for macros:
+   SAC_ND_A_DESC
+   SAC_ND_A_DESC_NULL                               
+   SAC_ND_A_DESC_NAME  
+   FIXME currently in non-default case SAC_ND_A_DESC_NULL 
+         expands to SAC_ND_A_DESC__NULL instead of SAC_ND_A_DESC_NULL__UNDEF
+   FIXME SAC_ND_DECL__DESC expands to SAC_ND_DECL__DESC__NONE
+         instead of SAC_ND_DECL__DESC__UNDEF
+*/
+strlist desc = ["A_DESC", "A_DESC_NULL", "A_DESC_NAME", "DECL__DESC"];
+expand name="SAC_ND_<desc>" args=[node nd] 
+{
+  if (shape (nd) == SCL && hidden (nd) == NHD
+      || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
+    generare "SAC_ND_<desc>__UNDEF (%1)" % [nd];
+  else
+    generate "SAC_ND_<desc>__DEFAULT (%1)" % [nd];
+}
+
+expand name="SAC_ND_A_DESC_DIM" args=[node nd]
+{
+  if (shape (nd) == AUD)
+    generate "SAC_ND_A_DESC_DIM__DEFAULT (%1)" % [nd];
+  else
+    generate "SAC_ND_A_DESC_DIM__UNDEF (%1)" % [nd];  
+}
+
+strlist sizeshape = ["SIZE", "SHAPE"];
+expand name="SAC_ND_A_MIRROR_<sizeshape>" args=[node nd]
+{
+  if (ismember (shape (nd), [AKD, AUD]))
+    generate "SAC_ND_A_DESC_<sizeshape>__DEFAULT (%1)" % [nd];
+  else
+    generate "SAC_ND_A_DESC_<sizeshape>__UNDEF (%1)" % [nd];
+}
+
+strlist dimsize = ["A_MIRROR_DIM", "A_MIRROR_SIZE", "PRINT_SHAPE", "TYPE"];
+expand name="SAC_ND_<dimsize>" args=[node nd]
+{
+  if (shape (nd) == SCL)
+    generate "SAC_ND_<dimsize>__SCL (%1)" % [nd];
+  else
+    generate "SAC_ND_<dimsize>__DEFAULT (%1)" % [nd];
+}
+
+expand name="SAC_ND_A_MIRROR_SHAPE" args=[node nd]
+{
+  if (ismemeberof (shape (nd), [AKS, AKD]))
+    generate "SAC_ND_A_MIRROR_SHAPE__DEFAULT (%1)" % [nd];
+  else
+    generate "SAC_ND_A_MIRROR_SHAPE__UNDEF (%1)" % [nd];
+}
+
+strlist dimsizefield = ["A_DIM", "A_SIZE", "A_FIELD", "DESC_TYPE"];
+expand name="SAC_ND_<dimsizefield>" args=[node nd]
+{
+  generate "SAC_ND_<dimsizefield>__DEFAULT";
+}
+
+/* FIXME broken naming convention here. Any reason?  */
+expand name="SAC_ND_A_FIELD_UNBOX" args=[node nd]
+{
+  if (shape (nd) == SCL)
+    generate "SAC_ND_A_FIELD (%1)" % [nd];
+  else
+    generate "SAC_ND_A_FIELD__BOXED (%1)" % [nd];
+}
+
+expand name="SAC_ND_A_RC" args=[node nd]
+{
+  if (shape (nd) == SCL && hidden (nd) == NHD && unique (nd) == NUQ 
+      || unique (nd) == UNQ)
+    generate "SAC_ND_A_RC__UNDEF (%1)" % [nd];
+  else
+    generate "SAC_ND_A_RC__DEFAULT (%1)" % [nd];
+}
+
+expand name="SAC_ND_A_SHAPE" args=[node nd]
+{
+  if (shape (nd) == SCL)
+    generate "SAC_ND_A_SHAPE__SCL (%1)" % [nd];
+  else if (ismember (shape (nd), [AKS, AKD]))
+    generate "SAC_ND_A_SHAPE__AKS_AKD (%1)" % [nd];
+  else if (shape (nd) == AUD)
+    generate "SAC_ND_A_SHAPE__AUD (%1)" % [nd];
+  /* XXX What happens here, do we need to produce an error?  */
+}
+
+strlist rw = ["READ", "WRITE"];
+expand name="SAC_ND_<rw>" args=[node nd]
+{
+  if (shape (nd) == SCL)
+    generate "SAC_ND_<rw>__SCL (%1)" % [nd];
+  else if (bit (nd) == YES)
+    generate "SAC_ND_<rw>__BITARRAY (%1)" % [nd];
+  else
+    generate "SAC_ND_<rw>__DEFAULT (%1)" % [nd];
+}
+
+expand name="SAC_ND_WRITE_COPY" args=[node nd]
+{
+  if (hidden (nd) == HID)
+    generate "SAC_ND_WRITE_COPY__HID (%1)" % [nd];
+  else if (hidden (nd) == NHD)
+    generate "SAC_ND_WRITE_COPY__NHD (%1)" % [nd];
+  /* XXX What happens if hidden (nd) is empty?  */
+}
+
+expand name="SAC_ND_TYPEDEF" args=[node nd]
+{
+  if (hidden (nd) == HID)
+    generate "SAC_ND_TYPEDEF__HID (%1)" % [nd];
+  else
+    generate "SAC_ND_TYPEDEF__DEFAULT (%1)" % [nd];
+}
+
+/* Actually this could be merged with "SAC_ND_<desc>" if the names
+   of expanded macros could be unified.  */
+strlist params = ["PARAM_in", "PARAM_out", "ARG_in", 
+                  "ARG_out", "RET_out", "PARAM_inout"];
+expand name="SAC_ND_<params>" args=[node nd] 
+{
+  if (shape (nd) == SCL && hidden (nd) == NHD
+      || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
+    generare "SAC_ND_<params>__NODESC (%1)" % [nd];
+  else
+    generate "SAC_ND_<params>__DESC (%1)" % [nd];
+}
+
+/* I like the prefix named DAO :)  */
+strlist dao = ["ALLOC", "ALLOC_BEGIN", "ALLOC_END", "REALLOC_BEGIN", "REALLOC_END"];
+expand name="SAC_ND_<dao>" args=[node nd]
+{
+  if (ismember (shape (nd), [SCL, AKS]))
+    generate "SAC_ND_<dao>__DAO (%1)" % [nd];
+  else if (ismember (shape (nd), [AKD, AUD]))
+    generate "SAC_ND_<dao>__NO_DAO (%1)" % [nd];
+  /* XXX what happens if empty?  */
+}
+
+

@@ -1,0 +1,50 @@
+
+/* Type definitions and conversion functions.  */
+type NT       {str    -> ccall "GetNt"};
+type ID       {str    -> ccall "GetId"};
+type INT      {int    -> ccall "GetInt"};
+type ARGLIST  {list   -> ccall "GetList"};
+
+
+/* How to expand an ICM called ND_FUN_DECL.  */
+expand fun="ND_FUN_DECL" args=[ID name, NT ret, INT cnt, ARGLIST vlist]
+{
+    /* Assert that length of VLIST parameter is cnt * 3.  */
+    assert length (vlist) == 3 * cnt;
+    
+    /* Depending on the RET parameter we decide
+       whether we have a void type or SAC_ND_TYPE.  */
+    ftype = str (ret)[0] == '\0' ? "void" 
+                                 : "SAC_ND_TYPE (%1)" % [ret];
+
+    /* Divide a list of elements VLIST into triplets
+       and convert them into the string SAC_ND_PARAM (%1, %2, %3).  */
+    vaargs = [];
+    for [tag, base, nt] in vlist
+        vaargs += "SAC_ND_PARAM_%1 (%2, %3)" % [tag, base, nt];
+      
+    /* Output the result.  */
+    generate "SAC_ND_DECL_FUN2 (%1, %2, %3)" % [name, tag, vaargs];
+}
+
+
+expand fun="ND_FUN_DEF_BEGIN" args=[ID name, NT ret, INT cnt, ARGLIST vlist]
+{
+    assert length (vlist) == 3 * cnt
+    ftype = str (ret)[0] == '0' ? "void" 
+                               : "SAC_ND_TYPE_NT (%1)" % [ret];
+    vaargs = [];
+    for [tag, base, nt] in vlist
+        vaargs += "SAC_ND_PARAM_%1 (%2, %3)" % [tag, base, nt];
+      
+    generate "SAC_ND_FUN_DEF_BEGIN (%1, %2, %3)" % [name, tag, vaargs];
+    generate "{";
+    generate "SAC_HM_DEFINE_THREAD_STATUS( SAC_HM_single_threaded)";
+}
+
+
+expand fun="ND_FUN_DEF_END" args=[ID name, NT ret, INT cnt, ARGLIST vlist]
+{
+    generate "}";
+    generate "SAC_ND_FUN_DEF_END2 ()";
+}

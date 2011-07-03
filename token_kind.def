@@ -1,0 +1,55 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+  
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+  
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
+TOKEN_KIND (tv_question,      "?")
+TOKEN_KIND (tv_compl,         "~")
+TOKEN_KIND (tv_comma,         ",")
+TOKEN_KIND (tv_lparen,        "(")
+TOKEN_KIND (tv_rparen,        ")")
+TOKEN_KIND (tv_lsquare,       "[")
+TOKEN_KIND (tv_rsquare,       "]")
+TOKEN_KIND (tv_lbrace,        "{")
+TOKEN_KIND (tv_rbrace,        "}")
+TOKEN_KIND (tv_semicolon,     ";")
+TOKEN_KIND (tv_colon,         ":")
+TOKEN_KIND (tv_mod,           "%")
+TOKEN_KIND (tv_and,           "&")
+TOKEN_KIND (tv_and_and,       "&&")
+TOKEN_KIND (tv_and_eq,        "&=")
+TOKEN_KIND (tv_or,            "|")
+TOKEN_KIND (tv_or_or,         "||")
+TOKEN_KIND (tv_or_eq,         "|=")
+TOKEN_KIND (tv_mult,          "*")
+TOKEN_KIND (tv_mult_eq,       "*=")
+TOKEN_KIND (tv_assign,        "=")
+TOKEN_KIND (tv_eq,            "==")
+TOKEN_KIND (tv_not,           "!")
+TOKEN_KIND (tv_not_eq,        "!=")
+TOKEN_KIND (tv_gt,            ">")
+TOKEN_KIND (tv_gt_eq,         ">=")
+TOKEN_KIND (tv_lt,            "<")
+TOKEN_KIND (tv_lt_eq,         "<=")
+TOKEN_KIND (tv_xor,           "^")
+TOKEN_KIND (tv_xor_eq,        "^=")
+TOKEN_KIND (tv_div,           "/")
+TOKEN_KIND (tv_div_eq,        "=")
+TOKEN_KIND (tv_plus,          "+")
+TOKEN_KIND (tv_plus_plus,     "++")
+TOKEN_KIND (tv_plus_eq,       "+=")
+TOKEN_KIND (tv_minus,         "-")
+TOKEN_KIND (tv_minus_minus,   "--")
+TOKEN_KIND (tv_minus_eq,      "-=")
+TOKEN_KIND (tv_ref,           "->")
+TOKEN_KIND (tv_eof,           "EOF")
+
