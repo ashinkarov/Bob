@@ -19,12 +19,14 @@
 
 /* Structure to store a list of user-defined types
    FIXME it should be a hash-table!  */
-extern tree user_types;
+extern tree type_list;
+extern tree constant_list;
+extern tree function_list;
 
 extern int error_count;
 extern int warning_count;
 
-tree user_type_defined (const char *  name);
+tree type_defined (const char *  name);
 tree add_user_type (tree type);
 
 void init_global ();

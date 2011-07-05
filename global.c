@@ -25,20 +25,36 @@ int error_count = 0;
 int warning_count = 0;
 
 
-/* Table that stores user-defined types.  */
-tree user_types = NULL;
+/* FIXME do we want to store standard types here as well?
+   Table that stores user-defined types.  */
+tree type_list = NULL;
 
+/* Here we would like to store all the constants
+   defined outside the functions and expands. As an
+   example consider strlist construction.  */
+tree constant_list = NULL;
+
+/* A global list to store functions and expands.  */
+tree function_list = NULL;
 
 /* Allocat all the global structures that are going to be used
    during the compilation.  */
 void 
 init_global ()
 {
-  assert (user_types == NULL, "user types are already allocated");
+  assert (type_list == NULL, "type list is already allocated");
+  assert (constant_list == NULL, "constant list is already allocated");
+  assert (function_list == NULL, "function list is already allocated");
   
-  user_types = make_tree (LIST);
-  TAILQ_INIT (&TREE_LIST_QUEUE (user_types));
+  type_list = make_tree (LIST);
+  TAILQ_INIT (&TREE_LIST_QUEUE (type_list));
+
+  constant_list = make_tree (LIST);
+  TAILQ_INIT (&TREE_LIST_QUEUE (constant_list));
   
+  function_list = make_tree (LIST);
+  TAILQ_INIT (&TREE_LIST_QUEUE (function_list));
+
   error_count = 0;
   warning_count = 0;
 }
@@ -46,23 +62,25 @@ init_global ()
 void
 finalize_global ()
 {
-  free_tree (user_types);
+  free_tree (type_list);
+  free_tree (constant_list);
+  free_tree (function_list);
 }
 
-/* Function returns tree if the used-defined type exists in the 
-   table and NULL otherwise.  */
+/* Function returns tree if the type exists in the 
+   table or NULL otherwise.  */
 tree 
-user_type_defined (const char *  name)
+type_defined (const char *  name)
 {
   struct tree_list_element *  tel;
   
-  assert (user_types != NULL, "user types are not allocated");
+  assert (type_list != NULL, "user types are not allocated");
   /* assert (TREE_CODE (name) == STRING_CST, "type name must be string"); */
 
-  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (user_types), entries)
+  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (type_list), entries)
     {
       /*printf ("-- %s, %s\n", TREE_STRING_CST (TREE_USER_TYPE_NAME (tel->element)), name);*/
-      if (strcmp (TREE_STRING_CST (TREE_USER_TYPE_NAME (tel->element)), name) == 0)
+      if (strcmp (TREE_STRING_CST (TREE_TYPE_NAME (tel->element)), name) == 0)
         return tel->element;
     }
   return NULL;
@@ -77,7 +95,7 @@ add_user_type (tree name)
   tree t;
 
   assert (TREE_CODE (name) == STRING_CST, "user-type name must be a string");
-  t = user_type_defined (TREE_STRING_CST (name));
+  t = type_defined (TREE_STRING_CST (name));
   if (t != NULL)
     {
       warning ("type redefined");
@@ -86,10 +104,10 @@ add_user_type (tree name)
 
   tel = (struct tree_list_element *) malloc (sizeof (struct tree_list_element));
   t = make_tree (USER_TYPE);
-  TREE_USER_TYPE_NAME (t) = name;
+  TREE_TYPE_NAME (t) = name;
   tel->element = t;
 
-  TAILQ_INSERT_TAIL (&TREE_LIST_QUEUE (user_types), tel, entries);
+  TAILQ_INSERT_TAIL (&TREE_LIST_QUEUE (type_list), tel, entries);
   return t;
 }
 

@@ -16,6 +16,7 @@
 
 #include "expand.h"
 #include "tree.h"
+#include "global.h"
 
 #define DEF_TREE_CODE(code, desc, class, operands) class,
 enum tree_code_class tree_code_type[] =
@@ -57,19 +58,25 @@ init_global_tree ()
   global_tree[TG_ERROR_MARK] = (tree) malloc (sizeof (struct tree_base));
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
 
+#define MAKE_TYPE(tg_id, code, tok_kind) \
+  do { \
+    tree __t; \
+    global_tree[tg_id] = (tree) malloc (sizeof (struct tree_type_node)); \
+    TREE_CODE_SET (global_tree[tg_id], code); \
+    __t = make_tree (STRING_CST); \
+    TREE_STRING_CST (__t) = strdup (token_kind_as_string (tok_kind)); \
+    TREE_STRING_CST_LENGTH (__t) = strlen (token_kind_as_string (tok_kind)); \
+    TREE_TYPE_NAME (global_tree[tg_id]) = __t; \
+    tree_list_append (type_list, global_tree[tg_id]); \
+  } while (0)
+  
   /* Here we assume that we have only one kind of integers.  */
-  global_tree[TG_INTEGER_TYPE] = (tree) malloc (sizeof (struct tree_base));
-  TREE_CODE_SET (global_tree[TG_INTEGER_TYPE], INTEGER_TYPE);
-
-  global_tree[TG_STRING_TYPE] = (tree) malloc (sizeof (struct tree_base));
-  TREE_CODE_SET (global_tree[TG_STRING_TYPE], STRING_TYPE);
-
-  global_tree[TG_LIST_TYPE] = (tree) malloc (sizeof (struct tree_base));
-  TREE_CODE_SET (global_tree[TG_LIST_TYPE], LIST_TYPE);
-
-  global_tree[TG_VOID_TYPE] = (tree) malloc (sizeof (struct tree_base));
-  TREE_CODE_SET (global_tree[TG_VOID_TYPE], VOID_TYPE);
-
+  MAKE_TYPE (TG_INTEGER_TYPE, INTEGER_TYPE, tv_int);
+  MAKE_TYPE (TG_STRING_TYPE, STRING_TYPE, tv_str);
+  MAKE_TYPE (TG_LIST_TYPE, LIST_TYPE, tv_list);
+  /* FIXME currently we don't know what to do with this keyword
+     when it appears.  */
+  MAKE_TYPE (TG_VOID_TYPE, VOID_TYPE, tv_void);
 }
 
 void
@@ -81,7 +88,10 @@ finalize_global_tree ()
        we know that global_trees contain only tree_code
        and noone is going to reference them after this function
        call.  */
-    free (global_tree[i]);
+    if (global_tree[i] == error_mark_node)
+      free (global_tree[i]);
+    else
+      free_tree (global_tree[i]);
 }
 
 tree
@@ -275,14 +285,12 @@ free_tree (tree node)
           TREE_FUNC_TYPE_NAME (node) = NULL;
           TREE_CODE_SET (node, EMPTY_MARK);
         }
-      else if (code == USER_TYPE)
+      else /* if (code == USER_TYPE) */
         {
-          free_tree (TREE_USER_TYPE_NAME (node));
-          TREE_USER_TYPE_NAME (node) = NULL;
+          free_tree (TREE_TYPE_NAME (node));
+          TREE_TYPE_NAME (node) = NULL;
           TREE_CODE_SET (node, EMPTY_MARK);
         }
-      else
-        ;
 
       break;
 

@@ -206,6 +206,7 @@ enum tree_global_code
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
+#define TREE_TYPE_NAME(node)  ((node)->type_node.name)
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
@@ -295,7 +296,6 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_LIST_CST_LENGTH(node) ((node)->list_cst_node.length)
 
 #define TREE_LIST_QUEUE(node) ((node)->list_node.list)
-#define TREE_USER_TYPE_NAME(node) ((node)->type_node.name)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 

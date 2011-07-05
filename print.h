@@ -15,8 +15,26 @@
 #ifndef __PRINT_H__
 #define __PRINT_H__
 
+enum funexpand
+{
+  t_expand,
+  t_function
+};
+
 int print_expression (FILE *, tree);
 int print_statement (FILE *, tree);
 int print_stmt_list (FILE *, tree);
+
+
+int print_all (FILE *);
+int print_arglist (FILE *, tree);
+int print_function_or_expand (FILE *, tree,  enum funexpand);
+int print_function (FILE *, tree);
+int print_expand (FILE *, tree);
+int print_functions_or_expands (FILE *, enum funexpand);
+int print_expands (FILE *);
+int print_functions (FILE *);
+int print_constants (FILE *);
+int print_types (FILE *);
 
 #endif /* __PRINT_H__  */

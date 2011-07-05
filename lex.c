@@ -636,6 +636,9 @@ token_free (struct token *tok)
 
 /* Main function if you want to test lexer part only.  */
 #ifdef LEXER_BINARY
+int error_count = 0;
+int warning_count = 0;
+
 int
 main (int argc, char *argv[])
 {

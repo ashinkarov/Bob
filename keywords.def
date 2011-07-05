@@ -13,19 +13,28 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 /* This list should be sorted alphabetically to allow
-   bsearch work correctly.  */
-
+   bsearch work correctly. */
+   
 KEYWORD (args,      "args")
 KEYWORD (assert,    "assert")
 KEYWORD (else,      "else")
 KEYWORD (expand,    "expand")
 KEYWORD (for,       "for")
-KEYWORD (fun,       "fun")
 KEYWORD (generate,  "generate")
 KEYWORD (if,        "if")
 KEYWORD (in,        "in")
 KEYWORD (int,       "int")
 KEYWORD (list,      "list")
-KEYWORD (string,    "string")
+KEYWORD (name,      "name")
+KEYWORD (str,       "str")
+KEYWORD (strlist,   "strlist")
 KEYWORD (type,      "type")
+KEYWORD (void,      "void") /* Do we really need that?  */
 
+#if 0
+   One of the possible scenarios how to quickly sort the list could be
+   the following unix command:
+       cat keywords.def | egrep '^KEYWORD' \
+        | sed -e 's/KEYWORD\s*(\([^,]*\),.*/\1/g' \
+        | sort | sed -e 's/^\(.*\)$/KEYWORD (\1, "\1")/g'
+#endif

@@ -18,8 +18,8 @@
 #include "expand.h"
 #include "tree.h"
 #include "global.h"
-
 #include "print.h"
+#include "typecheck.h"
 
 
 struct parser 
@@ -77,7 +77,7 @@ tree handle_statement_list (struct parser *);
 tree handle_expand (struct parser *);
 tree handle_statement (struct parser *);
 tree handle_stmt_or_stmt_list (struct parser *);
-
+tree handle_strlist (struct parser *);
 
 /* Get one token from the lexer or from the token buffer.
    Token is taken from the buffer if parser_unget was 
@@ -326,6 +326,15 @@ token_starts_expr (struct token *  tok)
         default:
           return false;
         }
+    case tok_keyword:
+      switch (token_value (tok))
+        {
+        case tv_int:
+        case tv_str:
+          return true;
+        default:
+          return false;
+        }
     default:
       return false;
     }
@@ -408,14 +417,32 @@ handle_primary_expr (struct parser *  parser)
       break;
 
     case tok_id:
+    case tok_keyword:
       tok1 = parser_get_token (parser);
+      
+
       if (token_class (tok1) == tok_operator 
           && token_value (tok1) == tv_lparen)
         {
           /* We have a function call.  */
           tree args = handle_expr_list (parser);
+          
+         
           if (parser_expect_tval (parser, tv_rparen))
             {
+              /* Check for possible conversion functions like 
+                 int and str, all the other keyword functions
+                 should be rejected for the time being.  */
+              if (token_class (tok) == tok_keyword
+                  && !token_starts_expr (tok))
+                {
+                  error_loc (token_location (tok), 
+                             "invalid usage of keyword %s.", 
+                             token_as_string (tok));
+                  parser_get_token (parser);
+                  return error_mark_node;
+                }
+
               parser_get_token (parser);
               res = make_tree (CALL_EXPR);
               TREE_OPERAND_SET (res, 0, make_string_cst (tok));
@@ -493,7 +520,12 @@ handle_postfix_expr (struct parser *  parser)
   parser_unget (parser);
 
   if (!token_starts_expr (tok))
-    return error_mark_node;
+    {
+      error_loc (token_location (tok), 
+                 "token %s cannot start an expression.", 
+                 token_as_string (tok));
+      return error_mark_node;
+    }
 
   exp = handle_primary_expr (parser);
 
@@ -594,12 +626,11 @@ handle_function_args (struct parser *parser)
         }
 
       /* type */
-      /* FIXME check built-in types as well  */
-      type = user_type_defined (token_as_string (tok));
+      type = type_defined (token_as_string (tok));
       if (!type)
         {
           error_loc (token_location (tok), 
-                     "unknown type %s used", token_as_string (tok));
+                     "unknown type `%s' used", token_as_string (tok));
           parser_get_token (parser);
           error_occured = true;
           goto comma_or_rsquare;
@@ -641,7 +672,7 @@ comma_or_rsquare:
 }
 
 
-/* Handle the part of expand 'fun = "<name>"'  */
+/* Handle the part of expand 'name = "<name>"'  */
 tree
 handle_fun (struct parser *  parser)
 {
@@ -649,7 +680,7 @@ handle_fun (struct parser *  parser)
 
   /* we assume that it is called when we know
      that the current token is fun.  */
-  assert (token_class (tok) == tok_keyword && token_value (tok) == tv_fun,
+  assert (token_class (tok) == tok_keyword && token_value (tok) == tv_name,
           "token 'fun' expected here");
   if (!parser_expect_tval (parser, tv_assign))
     {
@@ -1192,7 +1223,7 @@ handle_expand (struct parser *parser)
   
   parser_unget (parser);
 
-  if (token_class (tok) == tok_keyword && token_value (tok) == tv_fun)
+  if (token_class (tok) == tok_keyword && token_value (tok) == tv_name)
     {
       name = handle_fun (parser);
       if (!parser_expect_tval (parser, tv_args))
@@ -1202,7 +1233,7 @@ handle_expand (struct parser *parser)
   else if (token_class (tok) == tok_keyword && token_value (tok) == tv_args)
     {
       args = handle_args (parser);
-      if (!parser_expect_tval (parser, tv_fun))
+      if (!parser_expect_tval (parser, tv_name))
         goto skip;
       name = handle_fun (parser);
     }
@@ -1222,13 +1253,13 @@ skip:
   stmts = handle_statement_list (parser);
 
   /* For testing purposes.  */
-  if (stmts != error_mark_node)
+  /* if (stmts != error_mark_node)
     {
       printf ("-- statements of expansion %s parsed successfully\n", 
               TREE_STRING_CST (name));
       print_stmt_list (stdout, stmts);
       printf ("\n");
-    }
+    }  */
   
   if (args == error_mark_node 
       || name == error_mark_node
@@ -1249,6 +1280,26 @@ skip:
     }
 }
 
+tree 
+handle_strlist (struct parser *  parser)
+{
+  struct token *  tok = parser_get_token (parser);
+  tree expr;
+  
+  parser_unget (parser);
+  expr = handle_expression (parser);
+
+
+  if (expr == error_mark_node || TREE_CODE (expr) != ASSIGN_EXPR)
+    {
+      error_loc (token_location (tok), 
+                 "invalid expression for strlist found.");
+      return error_mark_node;
+    }
+  
+  return expr;
+}
+
 
 /* Top level function to parse the file.  */
 int
@@ -1265,16 +1316,20 @@ parse (struct parser *parser)
         case tok_keyword:
           switch (token_value (tok))
             {
+              tree res;
+
             case tv_type:
               handle_type_definition (parser);
               break;
 
             case tv_expand:
-              if (handle_expand (parser) != error_mark_node)
-                {
-                  tree t = make_tree (EXPAND_STMT);
+              if ((res = handle_expand (parser)) != error_mark_node)
+                tree_list_append (function_list, res);
+              break;
 
-                }
+            case tv_strlist:
+              if ((res = handle_strlist (parser)) != error_mark_node)
+                tree_list_append (constant_list, res);
               break;
 
             default:
@@ -1316,22 +1371,10 @@ main (int argc, char *argv[])
 {
   int ret = 0;
   struct lexer *  lex = (struct lexer *) malloc (sizeof (struct lexer));
-  struct parser * parser = (struct parser *) malloc (sizeof (struct parser));
+  struct parser *  parser = (struct parser *) malloc (sizeof (struct parser));
 
   init_global ();
   init_global_tree ();
-
-
-  /* FIXME This is a test, remove it
-  
-  tree t;
-  
-  t = make_tree (INTEGER_CST);
-  TREE_INTEGER_CST (t) = 123;
-
-  printf ("tree created %s with value %i\n", 
-          TREE_CODE_NAME (TREE_CODE (t)), TREE_INTEGER_CST (t));
-  free (t);  */
 
   if (argc <= 1)
     {
@@ -1349,6 +1392,11 @@ main (int argc, char *argv[])
 
   parser_init (parser, lex);
   parse (parser);
+
+  if (error_count == 0)
+    print_all (stdout);
+  
+  typecheck ();
 
 cleanup:
   parser_finalize (parser);

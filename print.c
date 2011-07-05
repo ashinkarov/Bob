@@ -15,6 +15,7 @@
 #include "expand.h"
 #include "tree.h"
 #include "print.h"
+#include "global.h"
 
 static int level = 0;
 
@@ -205,3 +206,160 @@ print_stmt_list (FILE *f, tree stmt)
   return 0;
 }
 
+int
+print_types (FILE *f)
+{
+  struct tree_list_element *  ptr;
+
+  if (type_list == NULL)
+    return 0;
+    
+  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (type_list), entries)
+    {
+      fprintf (f, "type ");
+      print_expression (f, TREE_TYPE_NAME (ptr->element));
+      fprintf (f, ";\n");
+    }
+
+  return 0;
+}
+
+int
+print_constants (FILE *f)
+{
+  struct tree_list_element *  ptr;
+
+  if (constant_list == NULL)
+    return 0;
+    
+  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (constant_list), entries)
+    {
+      /* FIXME for the time being we have only strlist,
+         in case we would allow more constants we will
+         have to change the printing routine as well.  */
+      fprintf (f, "strlist ");
+      print_expression (f, ptr->element);
+    }
+
+  return 0;
+}
+
+int
+print_functions (FILE *f)
+{
+  return print_functions_or_expands (f, t_function);
+}
+
+int
+print_expands (FILE *f)
+{
+  return print_functions_or_expands (f, t_expand);
+}
+
+int
+print_functions_or_expands (FILE *f, enum funexpand proctype)
+{
+  tree lst = function_list;
+  struct tree_list_element *  ptr;
+
+  if (lst == NULL)
+    return 0;
+
+  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (lst), entries)
+    {
+      if (proctype == t_function)
+        {
+          if (TREE_CODE (ptr->element) != FUNCTION_STMT)
+            continue;
+          print_function (f, ptr->element);
+        }
+      else if (proctype == t_expand)
+        {
+          if (TREE_CODE (ptr->element) != EXPAND_STMT)
+            continue;
+          print_expand (f, ptr->element);
+        }
+      else
+        unreachable (0);
+    }
+ 
+  return 0;
+}
+
+int
+print_expand (FILE *f, tree node)
+{
+  assert (TREE_CODE (node) == EXPAND_STMT, 
+          "Cannot print node of type %s.", TREE_CODE_NAME (TREE_CODE (node)));
+
+  return print_function_or_expand (f, node, t_expand);
+}
+
+int
+print_function (FILE *f, tree node)
+{
+  assert (TREE_CODE (node) == FUNCTION_STMT, 
+          "Cannot print node of type %s.", TREE_CODE_NAME (TREE_CODE (node)));
+  return print_function_or_expand (f, node, t_function);
+}
+
+int
+print_function_or_expand (FILE *f, tree node,  enum funexpand proctype)
+{
+  if (proctype == t_expand)
+    {
+      assert (TREE_CODE (node) == EXPAND_STMT, "expand statement expected.");
+      fprintf (f, "expand ");
+    }
+  else if (proctype == t_function)
+    {
+      assert (TREE_CODE (node) == FUNCTION_STMT, "function statement expected");
+      fprintf (f, "function ");
+    }
+  else
+    unreachable (0);
+
+  fprintf (f, "name = ");
+  print_expression (f, TREE_OPERAND (node, 0));
+  fprintf (f, " args = ");
+  print_arglist (f, TREE_OPERAND (node, 1));
+  fprintf (f, "\n");
+
+  print_stmt_list (f, TREE_OPERAND (node, 2));
+  fprintf (f, "\n");
+
+  return 0;
+}
+
+int
+print_arglist (FILE *f, tree node)
+{
+  struct tree_list_element *  ptr;
+  
+  assert (TREE_CODE (node) == LIST, "Not an argument list.");
+  fprintf (f, "[");
+  
+  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (node), entries)
+    {
+      print_expression (f, TREE_TYPE_NAME (TREE_TYPE (ptr->element)));
+      fprintf (f, " ");
+      print_expression (f, ptr->element);
+      if (TAILQ_NEXT (ptr, entries))
+        fprintf (f, ", ");
+    }
+ 
+  fprintf (f, "]");
+  return 0;
+}
+
+int
+print_all (FILE *f)
+{
+  int type_ret = print_types (f);
+  int const_ret = print_constants (f);
+  int function_ret = print_functions (f);
+  int expand_ret = print_expands (f);
+  
+  return type_ret == 0 && const_ret == 0 
+         && function_ret == 0 && expand_ret == 0;
+}
