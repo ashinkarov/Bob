@@ -239,6 +239,7 @@ print_constants (FILE *f)
          have to change the printing routine as well.  */
       fprintf (f, "strlist ");
       print_expression (f, ptr->element);
+      fprintf (f, ";\n");
     }
 
   return 0;

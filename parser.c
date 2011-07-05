@@ -86,7 +86,7 @@ struct token *
 parser_get_token (struct parser *  parser)
 {
   struct token *  tok;
-
+  
   if (parser->unget_idx == 0)
     {
       /* Skip comments for the time being. We do not skip
@@ -1146,6 +1146,13 @@ handle_statement (struct parser *  parser)
         parser_get_token (parser);
       return ret;
     }
+  else if (token_class (tok) == tok_operator 
+           && token_value (tok) == tv_semicolon)
+    {
+      /* This is a hack to eat empty semicolon, or maybe not a hack.  */
+      parser_get_token (parser);
+      return NULL;
+    }
   else
     return error_mark_node;
 }
@@ -1161,6 +1168,7 @@ handle_statement_list (struct parser *  parser)
   tree stmt_list = make_tree_list ();
   // tree var_list = make_tree_list ();
 
+
   if (!parser_expect_tval (parser, tv_lbrace))
     {
       free_tree (stmt_list);
@@ -1170,23 +1178,33 @@ handle_statement_list (struct parser *  parser)
 
   while (true)
     {
+      struct location tl;
+
+      tok = parser_get_token (parser);
+      parser_unget (parser);
+      tl = token_location (tok);
+
       tree stmt = handle_statement (parser);
       
-      if (stmt != error_mark_node)
+      if (stmt != error_mark_node && stmt != NULL)
         {
           tree_list_append (stmt_list, stmt);
           
           //print_statement (stdout, stmt);
           //printf ("\n");
         }
-      else
+      else if (stmt != NULL)
         {     
           error_occured = true;
-          printf ("-- start to skip form token %s ", token_as_string (tok));
+          //printf ("-- start to skip form token %s ", saved);
           tok = parser_get_until_tval (parser, tv_semicolon);
+          //printf ("skipped until %s\n", token_as_string (tok));
+          error_loc (tl, "invalid expression found, skipped until %i:%i:`%s'",
+                     (int) token_location (tok).line, 
+                     (int) token_location (tok).col,
+                     token_as_string (tok));
           if (token_class (tok) == tok_eof)
             goto out;
-          printf ("skipped until %s\n", token_as_string (tok));
         }
 
       tok = parser_get_token (parser);

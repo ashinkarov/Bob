@@ -32,7 +32,7 @@ tree type_list = NULL;
 /* Here we would like to store all the constants
    defined outside the functions and expands. As an
    example consider strlist construction.  */
-tree constant_list = NULL;
+tree constant_list = NULL ;
 
 /* A global list to store functions and expands.  */
 tree function_list = NULL;

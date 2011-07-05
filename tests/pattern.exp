@@ -14,7 +14,7 @@ expand name="SAC_ND_<desc>" args=[node nd]
 {
   if (shape (nd) == SCL && hidden (nd) == NHD
       || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
-    generare "SAC_ND_<desc>__UNDEF (%1)" % [nd];
+    generate "SAC_ND_<desc>__UNDEF (%1)" % [nd];
   else
     generate "SAC_ND_<desc>__DEFAULT (%1)" % [nd];
 }
@@ -124,13 +124,14 @@ expand name="SAC_ND_<params>" args=[node nd]
 {
   if (shape (nd) == SCL && hidden (nd) == NHD
       || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
-    generare "SAC_ND_<params>__NODESC (%1)" % [nd];
+    generate "SAC_ND_<params>__NODESC (%1)" % [nd];
   else
     generate "SAC_ND_<params>__DESC (%1)" % [nd];
 }
 
 /* I like the prefix named DAO :)  */
-strlist dao = ["ALLOC", "ALLOC_BEGIN", "ALLOC_END", "REALLOC_BEGIN", "REALLOC_END"];
+strlist dao = ["ALLOC", "ALLOC_BEGIN", "ALLOC_END", 
+               "REALLOC_BEGIN", "REALLOC_END"];
 expand name="SAC_ND_<dao>" args=[node nd]
 {
   if (ismember (shape (nd), [SCL, AKS]))
