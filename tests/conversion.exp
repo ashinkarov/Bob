@@ -1,0 +1,4 @@
+expand name="XXX" args=[]
+{
+    ftype = str (ret)[0] == '0' ? "A" : "B";
+} 

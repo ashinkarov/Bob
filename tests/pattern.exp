@@ -1,3 +1,5 @@
+type node;
+
 /* This is an expansion for macros:
    SAC_ND_A_DESC
    SAC_ND_A_DESC_NULL                               

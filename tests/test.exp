@@ -1,5 +1,5 @@
 
-expand fun="TEST_FUNCTION" args=[int x, int y]
+expand name="TEST_FUNCTION" args=[int x, int y]
 {
   a = 3+ 5 * 7;
   assert a == b + c;

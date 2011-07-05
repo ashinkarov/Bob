@@ -1,5 +1,5 @@
 
-expand fun="X" args=[]
+expand name="X" args=[]
 {
   x = x + (x = 5);
   a = b[32+7][2];
