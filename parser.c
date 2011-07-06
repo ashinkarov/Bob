@@ -409,11 +409,13 @@ handle_primary_expr (struct parser *  parser)
     case tok_number:
       res = make_tree (INTEGER_CST);
       TREE_INTEGER_CST (res) = atoi (token_as_string (tok));
+      TREE_LOCATION (res) = token_location (tok);
       break;
 
     case tok_string:
     case tok_char:
       res = make_string_cst (tok);
+      TREE_LOCATION (res) = token_location (tok);
       break;
 
     case tok_id:
@@ -447,6 +449,7 @@ handle_primary_expr (struct parser *  parser)
               res = make_tree (CALL_EXPR);
               TREE_OPERAND_SET (res, 0, make_string_cst (tok));
               TREE_OPERAND_SET (res, 1, args);
+              TREE_LOCATION (res) = token_location (tok);
             }
           else
             res = error_mark_node;
@@ -455,6 +458,7 @@ handle_primary_expr (struct parser *  parser)
         {
           parser_unget (parser);
           res = make_identifier (tok);
+          TREE_LOCATION (res) = token_location (tok);
         }
       break;
 
@@ -469,6 +473,7 @@ handle_primary_expr (struct parser *  parser)
         
         case tv_lsquare:
           res = make_tree (LIST_CST);
+          TREE_LOCATION (res) = token_location (tok);
           TREE_LIST_CST (res) = handle_expr_list (parser);
           parser_expect_tval (parser, tv_rsquare);
           parser_get_token (parser);
@@ -476,11 +481,13 @@ handle_primary_expr (struct parser *  parser)
 
         case tv_minus:
           res = make_tree (UMINUS_EXPR);
+          TREE_LOCATION (res) = token_location (tok);
           TREE_OPERAND_SET (res, 0, handle_primary_expr (parser));
           break;
 
         case tv_not:
           res = make_tree (TRUTH_NOT_EXPR);
+          TREE_LOCATION (res) = token_location (tok);
           TREE_OPERAND_SET (res, 0, handle_primary_expr (parser));
           break;
 
@@ -1342,12 +1349,28 @@ parse (struct parser *parser)
 
             case tv_expand:
               if ((res = handle_expand (parser)) != error_mark_node)
-                tree_list_append (function_list, res);
+                {
+                  if (expand_exists (TREE_STRING_CST (TREE_OPERAND (res, 0)))
+                      != NULL)
+                    error ("duplicate expand `%s' definition found",
+                           TREE_STRING_CST (TREE_OPERAND (res, 0)));
+                  else
+                    tree_list_append (function_list, res);
+                }
               break;
 
             case tv_strlist:
               if ((res = handle_strlist (parser)) != error_mark_node)
-                tree_list_append (constant_list, res);
+                {
+                  assert (TREE_CODE (res) == ASSIGN_EXPR, 
+                          "Assign expression expected");
+                  tree t = TREE_ID_NAME (TREE_OPERAND (res, 0));
+                  if (constant_exists (TREE_STRING_CST (t)) != NULL)
+                    error ("deuplicate constant definition for "
+                           "variable `%s' found", TREE_STRING_CST (t));
+                  else
+                    tree_list_append (constant_list, res);
+                }
               break;
 
             default:
@@ -1373,7 +1396,7 @@ parse (struct parser *parser)
           continue;
         }
     }
-  printf ("note: finished parsing.\n");
+  //printf ("note: finished parsing.\n");
   if (error_count != 0)
     {
       printf ("note: %i errors found.\n", error_count);

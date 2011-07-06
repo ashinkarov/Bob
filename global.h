@@ -26,9 +26,13 @@ extern tree function_list;
 extern int error_count;
 extern int warning_count;
 
-tree type_defined (const char *  name);
-tree add_user_type (tree type);
-
 void init_global ();
 void finalize_global ();
+
+tree type_defined (const char *  name);
+tree add_user_type (tree type);
+tree function_exists (const char *);
+tree expand_exists (const char *);
+tree constant_exists (const char *);
+
 #endif /* __GLOBAL_H__  */

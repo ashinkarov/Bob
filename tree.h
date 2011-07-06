@@ -52,6 +52,7 @@ typedef union tree_node *tree;
 struct tree_base
 {
   enum tree_code code;
+  struct location loc;
 };
 
 /* Basic information each type should have.  */
@@ -59,6 +60,7 @@ struct tree_type_base
 {
   struct tree_base base;
   tree type;
+  int is_constant:1;
 };
 
 /* Structure to store a list of tree nodes.  */
@@ -95,8 +97,8 @@ struct tree_string_cst_node
 {
   struct tree_base base;
   struct tree_type_base typed;
-  int length;
-  char *value;
+  int  length;
+  char *  value;
 };
 
 struct tree_int_cst_node
@@ -199,14 +201,16 @@ enum tree_global_code
 #define error_mark_node     global_tree[TG_ERROR_MARK]
 #define integer_type_node   global_tree[TG_INTEGER_TYPE]
 #define string_type_node    global_tree[TG_STRING_TYPE]
-#define list_type_node      global_tree[TG_LIST_YTPE]
-#define void_node_type      global_tree[TG_VOID_TYPE]
+#define list_type_node      global_tree[TG_LIST_TYPE]
+#define void_type_node      global_tree[TG_VOID_TYPE]
 
 #define TREE_CODE(node) ((enum tree_code) (node)->base.code)
+#define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TREE_TYPE_NAME(node)  ((node)->type_node.name)
+#define TREE_CONSTANT(node) ((node)->typed.is_constant)
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */

@@ -216,6 +216,10 @@ print_types (FILE *f)
     
   TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (type_list), entries)
     {
+      /* No standard types please.  */
+      if (ptr->element == integer_type_node || ptr->element == string_type_node
+          || ptr->element == list_type_node || ptr->element == void_type_node)
+        continue;
       fprintf (f, "type ");
       print_expression (f, TREE_TYPE_NAME (ptr->element));
       fprintf (f, ";\n");

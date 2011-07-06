@@ -15,6 +15,11 @@
 #ifndef __TYPECHECK_H__
 #define __TYPECHECK_H__
 
-void typecheck ();
+int typecheck ();
+int typecheck_constant (tree);
+int typecheck_expand (tree);
+int typecheck_function (tree);
+int typecheck_expression (tree);
+
 
 #endif /* __TYPECHECK_H__  */

@@ -111,3 +111,66 @@ add_user_type (tree name)
   return t;
 }
 
+tree
+expand_exists (const char * str)
+{
+  struct tree_list_element *  tl;
+  
+  assert (function_list != NULL, "function-list is not initialized");
+
+  TAILQ_FOREACH (tl, &TREE_LIST_QUEUE (function_list), entries)
+    {
+      if (TREE_CODE (tl->element) != EXPAND_STMT)
+        continue;
+      
+      if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->element, 0)), str) == 0)
+        return tl->element;
+    }
+
+  return NULL;
+}
+
+tree
+function_exists (const char * str)
+{
+  struct tree_list_element *  tl;
+  
+  assert (function_list != NULL, "function-list is not initialized");
+
+  TAILQ_FOREACH (tl, &TREE_LIST_QUEUE (function_list), entries)
+    {
+      if (TREE_CODE (tl->element) != FUNCTION_STMT)
+        continue;
+      
+      if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->element, 0)), str) == 0)
+        return tl->element;
+    }
+
+  return NULL;
+}
+
+
+/* XXX Currently we support only strlist constants.  */
+tree
+constant_exists (const char * str)
+{
+  struct tree_list_element *  tl;
+  
+  assert (constant_list != NULL, "function-list is not initialized");
+
+  TAILQ_FOREACH (tl, &TREE_LIST_QUEUE (constant_list), entries)
+    {
+      tree t;
+      assert (TREE_CODE (tl->element) == ASSIGN_EXPR, 
+              "Constant should be defined using assign_expr");
+      
+      t = TREE_OPERAND (tl->element, 0);
+      assert (TREE_CODE (t) == IDENTIFIER, 0);
+
+      if (strcmp (TREE_STRING_CST (TREE_ID_NAME (t)), str) == 0)
+        return tl->element;
+    }
+
+  return NULL;
+
+}
