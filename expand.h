@@ -75,8 +75,9 @@ extern int warning_count;
     ++error_count; \
   } while (0)
 
-#define error(loc, ...) \
+#define error( ...) \
   do {  \
+    (void) fprintf (stderr, "error: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++error_count; \
   } while (0)

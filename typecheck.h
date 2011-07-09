@@ -19,7 +19,8 @@ int typecheck ();
 int typecheck_constant (tree);
 int typecheck_expand (tree);
 int typecheck_function (tree);
-int typecheck_expression (tree);
-
+int typecheck_stmt_list (tree, tree);
+int typecheck_stmt (tree, tree, tree);
+int typecheck_expression (tree, tree, tree);
 
 #endif /* __TYPECHECK_H__  */

@@ -88,8 +88,12 @@ DEF_TREE_CODE (EXPAND_STMT, "expand_stmt", tcl_statement, 3)
         3 -- <stmts>  */
 DEF_TREE_CODE (FUNCTION_STMT, "function_stmt", tcl_statement, 3)
 
-/* Typedef statement: type <string>  */
-/* DEF_TREE_CODE (TYPEDEF_STMT, "typedef_stmt", tcl_statement, 1) */
+/* Function prototype: -- currently no syntactical support for user,
+   we use it for the typechecking.
+        1 -- <string> name
+        2 -- <ret type> type
+        3 -- <arg types> type, type, ...  */
+DEF_TREE_CODE (FUNCTION_PROTO, "function_proto", tcl_statement, 3)
 
 /* If statement: if <cond> <stmt1> (else stmt2)?
    Tree operands: 

@@ -52,48 +52,6 @@ static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
 
 
-void
-init_global_tree ()
-{
-  global_tree[TG_ERROR_MARK] = (tree) malloc (sizeof (struct tree_base));
-  TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
-
-#define MAKE_TYPE(tg_id, code, tok_kind) \
-  do { \
-    tree __t; \
-    global_tree[tg_id] = (tree) malloc (sizeof (struct tree_type_node)); \
-    TREE_CODE_SET (global_tree[tg_id], code); \
-    __t = make_tree (STRING_CST); \
-    TREE_STRING_CST (__t) = strdup (token_kind_as_string (tok_kind)); \
-    TREE_STRING_CST_LENGTH (__t) = strlen (token_kind_as_string (tok_kind)); \
-    TREE_TYPE_NAME (global_tree[tg_id]) = __t; \
-    tree_list_append (type_list, global_tree[tg_id]); \
-  } while (0)
-  
-  /* Here we assume that we have only one kind of integers.  */
-  MAKE_TYPE (TG_INTEGER_TYPE, INTEGER_TYPE, tv_int);
-  MAKE_TYPE (TG_STRING_TYPE, STRING_TYPE, tv_str);
-  MAKE_TYPE (TG_LIST_TYPE, LIST_TYPE, tv_list);
-  /* FIXME currently we don't know what to do with this keyword
-     when it appears.  */
-  MAKE_TYPE (TG_VOID_TYPE, VOID_TYPE, tv_void);
-}
-
-void
-finalize_global_tree ()
-{
-  int i;
-  for (i = 0; i < TG_MAX; i++)
-    /* We can use free rather than free_tree because
-       we know that global_trees contain only tree_code
-       and noone is going to reference them after this function
-       call.  */
-    if (global_tree[i] == error_mark_node)
-      free (global_tree[i]);
-    else
-      free_tree (global_tree[i]);
-}
-
 tree
 make_tree (enum tree_code code)
 {
@@ -355,6 +313,7 @@ make_string_cst (struct token *tok)
    str = token_as_string (tok);
    TREE_STRING_CST (t) = strdup (str);
    TREE_STRING_CST_LENGTH (t) = strlen (str);
+   TREE_LOCATION (t) = token_location (tok);
    /* FIXME Add is_char modifier to the tree.  */
    return t;
 }
@@ -369,6 +328,7 @@ make_identifier (struct token *tok)
 
    t = make_tree (IDENTIFIER);
    TREE_ID_NAME (t) = make_string_cst (tok);
+   TREE_LOCATION (t) = token_location (tok);
    return t;
 }
 
@@ -407,6 +367,7 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, lhs);
   TREE_OPERAND_SET (t, 1, rhs);
+  TREE_LOCATION (t) = TREE_LOCATION (lhs);
   return t;
 }
 
@@ -440,3 +401,48 @@ make_assign (enum token_kind tk, tree lhs, tree rhs)
 
   return error_mark_node;
 }
+
+tree
+tree_list_copy (tree lst)
+{
+  tree cpy;
+  struct tree_list_element *  tel;
+
+  if (lst == NULL)
+    return NULL;
+
+  assert (TREE_CODE (lst) == LIST, 
+         "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
+  
+  cpy = make_tree_list ();
+  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (lst), entries)
+    {
+      tree_list_append (cpy, tel->element);
+    }
+
+  return cpy;
+}
+
+
+/* This function frees the list structure without touching
+   any tree pointers that list stores. It is useful to destroy
+   intermediate lists.  */
+void
+free_list (tree lst)
+{
+  struct tree_list_element *  ptr;
+  struct tree_list_element *  tmpptr;
+  
+  if (!TAILQ_EMPTY (&TREE_LIST_QUEUE (lst)))
+    {
+      ptr = TAILQ_FIRST (&TREE_LIST_QUEUE (lst));
+      while (ptr != NULL)
+        {
+          tmpptr = TAILQ_NEXT (ptr, entries);
+          if (ptr)
+            free (ptr);
+          ptr = tmpptr;
+        }
+    }
+}
+

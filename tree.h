@@ -60,7 +60,7 @@ struct tree_type_base
 {
   struct tree_base base;
   tree type;
-  int is_constant:1;
+  unsigned int is_constant:1;
 };
 
 /* Structure to store a list of tree nodes.  */
@@ -328,14 +328,14 @@ is_assignment_operator (enum token_kind tk)
 tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_atomic_trees ();
-void init_global_tree ();
-void finalize_global_tree ();
 tree make_string_cst (struct token *);
 tree make_identifier (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_binary_op (enum tree_code, tree, tree);
 tree make_assign (enum token_kind, tree, tree);
+tree tree_list_copy (tree);
+void free_list (tree);
 
 #endif /* __TREE_H__  */
 

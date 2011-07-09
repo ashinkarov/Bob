@@ -522,6 +522,7 @@ handle_postfix_expr (struct parser *  parser)
 {
   struct token *  tok;
   tree exp;
+  struct location loc;
   
   tok = parser_get_token (parser);
   parser_unget (parser);
@@ -535,6 +536,7 @@ handle_postfix_expr (struct parser *  parser)
     }
 
   exp = handle_primary_expr (parser);
+  loc = TREE_LOCATION (exp);
 
   while (true)
     {
@@ -563,6 +565,7 @@ handle_postfix_expr (struct parser *  parser)
           tree_list_append (list, exp);
           tree_list_append (list, idx);
           TREE_OPERAND_SET (post, 1, list);
+          TREE_LOCATION (post) = loc;
           exp = post;
         }
       else
@@ -688,7 +691,7 @@ handle_fun (struct parser *  parser)
   /* we assume that it is called when we know
      that the current token is fun.  */
   assert (token_class (tok) == tok_keyword && token_value (tok) == tv_name,
-          "token 'fun' expected here");
+          "token `name' expected here");
   if (!parser_expect_tval (parser, tv_assign))
     {
       error_loc (token_location (tok), "assignment expected");
@@ -895,6 +898,7 @@ out:
 }
 
 
+/* <expr> ? <expr> : <expr>  */
 tree
 handle_conditional_expr (struct parser *  parser)
 {
@@ -945,6 +949,7 @@ out:
       TREE_OPERAND_SET (ret, 0, cond);
       TREE_OPERAND_SET (ret, 1, if_expr);
       TREE_OPERAND_SET (ret, 2, else_expr);
+      TREE_LOCATION (ret) = TREE_LOCATION (cond);
       return ret;
     }
 }
@@ -1017,6 +1022,7 @@ handle_stmt_or_stmt_list (struct parser *  parser)
           ret = make_tree (STMT_LIST);
           TREE_STMT_LIST_STMTS (ret) = make_tree_list ();
           tree_list_append (TREE_STMT_LIST_STMTS (ret), stmt);
+          TREE_LOCATION (ret) = TREE_LOCATION (stmt);
         }
       else
         ret = error_mark_node;
@@ -1055,6 +1061,7 @@ handle_statement (struct parser *  parser)
                 tree_list_append (args, stmt);
                 TREE_OPERAND_SET (ce, 0, name);
                 TREE_OPERAND_SET (ce, 1, args);
+                TREE_LOCATION (ce) = TREE_LOCATION (name);
                 
                 if (parser_expect_tval (parser, tv_semicolon))
                   parser_get_token (parser);
@@ -1068,6 +1075,7 @@ handle_statement (struct parser *  parser)
             tree cond;
             tree if_branch = NULL;
             tree else_branch = NULL;
+            struct location loc = token_location (tok);
             
             parser_get_token (parser);
             cond = handle_expression (parser);
@@ -1089,6 +1097,7 @@ handle_statement (struct parser *  parser)
                 TREE_OPERAND_SET (ret, 0, cond);
                 TREE_OPERAND_SET (ret, 1, if_branch);
                 TREE_OPERAND_SET (ret, 2, else_branch);
+                TREE_LOCATION (ret) = loc;
                 return ret;
               }
             else
@@ -1106,6 +1115,7 @@ handle_statement (struct parser *  parser)
             tree iter;
             tree stmts;
             bool error_occured = false;
+            struct location loc = token_location (tok);
 
             parser_get_token (parser); 
             vars = handle_expression (parser);
@@ -1127,6 +1137,7 @@ handle_statement (struct parser *  parser)
                 TREE_OPERAND_SET (ret, 0, vars);
                 TREE_OPERAND_SET (ret, 1, iter);
                 TREE_OPERAND_SET (ret, 2, stmts);
+                TREE_LOCATION (ret) = loc;
                 return ret;
               }
             else
@@ -1416,6 +1427,7 @@ main (int argc, char *argv[])
 
   init_global ();
   init_global_tree ();
+  init_function_protos ();
 
   if (argc <= 1)
     {
