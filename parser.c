@@ -414,7 +414,7 @@ handle_primary_expr (struct parser *  parser)
 
     case tok_string:
     case tok_char:
-      res = make_string_cst (tok);
+      res = make_string_cst_tok (tok);
       TREE_LOCATION (res) = token_location (tok);
       break;
 
@@ -447,7 +447,7 @@ handle_primary_expr (struct parser *  parser)
 
               parser_get_token (parser);
               res = make_tree (CALL_EXPR);
-              TREE_OPERAND_SET (res, 0, make_string_cst (tok));
+              TREE_OPERAND_SET (res, 0, make_string_cst_tok (tok));
               TREE_OPERAND_SET (res, 1, args);
               TREE_LOCATION (res) = token_location (tok);
             }
@@ -457,7 +457,7 @@ handle_primary_expr (struct parser *  parser)
       else
         {
           parser_unget (parser);
-          res = make_identifier (tok);
+          res = make_identifier_tok (tok);
           TREE_LOCATION (res) = token_location (tok);
         }
       break;
@@ -558,8 +558,7 @@ handle_postfix_expr (struct parser *  parser)
           
           parser_get_token (parser);
           post = make_tree (CALL_EXPR);
-          name = make_tree (STRING_CST);
-          TREE_STRING_CST (name) = strdup ("index");
+          name = make_string_cst_str ("index");
           TREE_OPERAND_SET (post, 0, name);
           list = make_tree_list ();
           tree_list_append (list, exp);
@@ -592,7 +591,7 @@ handle_type_definition (struct parser *parser)
     }
   else
     {
-      tree tt = make_string_cst (tok);
+      tree tt = make_string_cst_tok (tok);
       t = add_user_type (tt);
     }
 
@@ -650,7 +649,7 @@ handle_function_args (struct parser *parser)
       if (parser_expect_tclass (parser, tok_id))
         {
           tok = parser_get_token (parser);
-          id = make_identifier (tok);
+          id = make_identifier_tok (tok);
           TREE_TYPE (id) = type;
           tree_list_append (list, id);
         }
@@ -704,7 +703,7 @@ handle_fun (struct parser *  parser)
     return error_mark_node;
 
   tok = parser_get_token (parser);
-  return make_string_cst (tok);
+  return make_string_cst_tok (tok);
 }
 
 /* Handle the part of expsnd 'args = [ (<type> <var>)* ]'  */
@@ -972,7 +971,7 @@ handle_expression (struct parser *  parser)
           /* We need to save the assignment operator, otherwise
              consequent get_token would free it.  */
           enum token_kind tk = token_value (tok1);
-          tree lhs = make_identifier (tok);
+          tree lhs = make_identifier_tok (tok);
           tree rhs;
           
           rhs = handle_conditional_expr (parser);
@@ -1048,7 +1047,7 @@ handle_statement (struct parser *  parser)
         case tv_assert:
         case tv_generate:
           {
-            tree name = make_string_cst (tok);
+            tree name = make_string_cst_tok (tok);
 
             parser_get_token (parser);
             stmt = handle_expression (parser);
@@ -1446,10 +1445,11 @@ main (int argc, char *argv[])
   parser_init (parser, lex);
   parse (parser);
 
-  if (error_count == 0)
-    print_all (stdout);
+  /*if (error_count == 0)
+    print_all (stdout);*/
   
   typecheck ();
+  print_all (stdout);
 
 cleanup:
   parser_finalize (parser);

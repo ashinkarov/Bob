@@ -74,7 +74,7 @@ TAILQ_HEAD (tree_list, tree_list_element);
 
 struct tree_list_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   struct tree_list list;
 };
@@ -95,7 +95,7 @@ struct tree_function_type_node
 
 struct tree_string_cst_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   int  length;
   char *  value;
@@ -103,14 +103,14 @@ struct tree_string_cst_node
 
 struct tree_int_cst_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   int value;
 };
 
 struct tree_list_cst_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   int size;
   tree elements;
@@ -118,28 +118,28 @@ struct tree_list_cst_node
 
 struct tree_identifier_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   tree name;
 };
 
 struct tree_unary_expr_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   tree operands[1];
 };
 
 struct tree_binary_expr_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   tree operands[2];
 };
 
 struct tree_trinary_expr_node
 {
-  struct tree_base base;
+  //struct tree_base base;
   struct tree_type_base typed;
   tree operands[3];
 };
@@ -328,8 +328,9 @@ is_assignment_operator (enum token_kind tk)
 tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_atomic_trees ();
-tree make_string_cst (struct token *);
-tree make_identifier (struct token *);
+tree make_string_cst_tok (struct token *);
+tree make_string_cst_str (const char *);
+tree make_identifier_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_binary_op (enum tree_code, tree, tree);

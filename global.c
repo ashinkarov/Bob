@@ -89,9 +89,7 @@ init_global_tree ()
     tree __t; \
     global_tree[tg_id] = (tree) malloc (sizeof (struct tree_type_node)); \
     TREE_CODE_SET (global_tree[tg_id], code); \
-    __t = make_tree (STRING_CST); \
-    TREE_STRING_CST (__t) = strdup (token_kind_as_string (tok_kind)); \
-    TREE_STRING_CST_LENGTH (__t) = strlen (token_kind_as_string (tok_kind)); \
+    __t = make_string_cst_str (token_kind_as_string (tok_kind)); \
     TREE_TYPE_NAME (global_tree[tg_id]) = __t; \
     tree_list_append (type_list, global_tree[tg_id]); \
   } while (0)
@@ -255,9 +253,7 @@ init_function_protos ()
 #define MAKE_PROTO(name, ret, num, ...) \
   do { \
     tree __name, __proto; \
-    __name = make_tree (STRING_CST); \
-    TREE_STRING_CST (__name) = strdup (name); \
-    TREE_STRING_CST_LENGTH (__name) = strlen (name); \
+    __name = make_string_cst_str (name); \
     __proto = make_function_proto (__name, ret, num, __VA_ARGS__); \
     assert (__proto != NULL, "Error creating function prototype `%s'", name); \
     tree_list_append (function_proto_list, __proto); \
@@ -271,6 +267,8 @@ init_function_protos ()
   /* XXX How can we do an index of LIST?   
          Most likely we will have to introduce internal type ANY
          to describe an element of generic list.  */
+  MAKE_PROTO ("assert", integer_type_node, 1, integer_type_node);
+  MAKE_PROTO ("generate", void_type_node, 1, string_type_node);
 }
 
 void

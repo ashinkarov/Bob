@@ -1,0 +1,4 @@
+expand name="X" args=[]
+{
+  a = 2 > 3 ? 1 : 5;
+}

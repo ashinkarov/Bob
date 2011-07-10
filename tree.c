@@ -297,7 +297,23 @@ free_tree (tree node)
 }
 
 tree
-make_string_cst (struct token *tok)
+make_string_cst_str (const char * value)
+{
+  tree t;
+  
+  assert (value != NULL, 0);
+
+  t = make_tree (STRING_CST);
+  TREE_STRING_CST (t) = strdup (value);
+  TREE_STRING_CST_LENGTH (t) = strlen (value);
+  /* FIXME Add is_char modifier to the tree.  */
+  
+  return t;
+}
+
+
+tree
+make_string_cst_tok (struct token *tok)
 {
    tree t;
    const char *  str;
@@ -309,17 +325,15 @@ make_string_cst (struct token *tok)
            "attempt to build sting_cst from %s", 
            token_class_as_string (token_class (tok)));
 
-   t = make_tree (STRING_CST);
    str = token_as_string (tok);
-   TREE_STRING_CST (t) = strdup (str);
-   TREE_STRING_CST_LENGTH (t) = strlen (str);
+   t = make_string_cst_str (str);
    TREE_LOCATION (t) = token_location (tok);
-   /* FIXME Add is_char modifier to the tree.  */
+   
    return t;
 }
 
 tree
-make_identifier (struct token *tok)
+make_identifier_tok (struct token *tok)
 {
    tree t;
    assert (token_class (tok) == tok_id, 
@@ -327,7 +341,7 @@ make_identifier (struct token *tok)
            token_class_as_string (token_class (tok)));
 
    t = make_tree (IDENTIFIER);
-   TREE_ID_NAME (t) = make_string_cst (tok);
+   TREE_ID_NAME (t) = make_string_cst_tok (tok);
    TREE_LOCATION (t) = token_location (tok);
    return t;
 }
@@ -433,6 +447,9 @@ free_list (tree lst)
   struct tree_list_element *  ptr;
   struct tree_list_element *  tmpptr;
   
+  if (lst == NULL)
+    return;
+
   if (!TAILQ_EMPTY (&TREE_LIST_QUEUE (lst)))
     {
       ptr = TAILQ_FIRST (&TREE_LIST_QUEUE (lst));
