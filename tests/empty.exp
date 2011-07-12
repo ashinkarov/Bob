@@ -1,0 +1,7 @@
+expand name = "X" args = []
+{
+    a = 10;
+    b = a + "x";
+    test = "fdsdfa"
+           "sdfsdf";
+}

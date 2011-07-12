@@ -151,6 +151,14 @@ struct tree_three_op_stmt_node
   tree operands[3];
 };
 
+
+struct tree_function_proto_node
+{
+  struct tree_base base;
+  tree ccall;
+  tree operands[3];
+};
+
 struct tree_stmt_list_node
 {
   struct tree_base base;
@@ -181,6 +189,7 @@ union tree_node
   struct tree_binary_expr_node      binary_expr_node;
   struct tree_trinary_expr_node     trinary_expr_node;
   struct tree_three_op_stmt_node    three_op_stmt_node;
+  struct tree_function_proto_node   function_proto_node;
   struct tree_stmt_list_node        stmt_list_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
@@ -211,6 +220,7 @@ enum tree_global_code
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TREE_TYPE_NAME(node)  ((node)->type_node.name)
 #define TREE_CONSTANT(node) ((node)->typed.is_constant)
+#define TREE_FUNCTION_PROTO_CCALL(node) ((node)->function_proto_node.ccall)
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
@@ -240,7 +250,10 @@ get_tree_operand (tree node, int idx)
       break;
 
     case tcl_statement:
-      return node->three_op_stmt_node.operands[idx];
+      if (code == FUNCTION_PROTO)
+        return node->function_proto_node.operands[idx];
+      else
+        return node->three_op_stmt_node.operands[idx];
 
     case tcl_expression:
       if (code == UMINUS_EXPR || code == TRUTH_NOT_EXPR)
@@ -273,7 +286,10 @@ set_tree_operand (tree node, int idx, tree value)
       break;
 
     case tcl_statement:
-      node->three_op_stmt_node.operands[idx] = value;
+      if (code == FUNCTION_PROTO)
+        node->function_proto_node.operands[idx] = value;
+      else
+        node->three_op_stmt_node.operands[idx] = value;
       break;
 
     case tcl_expression:

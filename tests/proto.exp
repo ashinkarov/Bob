@@ -1,0 +1,2 @@
+
+proto name="strlen" ret=int args=[str x] ccall="strlen";

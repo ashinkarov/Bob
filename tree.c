@@ -102,7 +102,10 @@ make_tree (enum tree_code code)
       break;
 
     case tcl_statement:
-      ret = (tree) malloc (size = sizeof (struct tree_three_op_stmt_node));
+      if (code == FUNCTION_PROTO)
+        ret= (tree) malloc (size = sizeof (struct tree_function_proto_node));
+      else
+        ret = (tree) malloc (size = sizeof (struct tree_three_op_stmt_node));
       break;
 
     case tcl_expression:
@@ -270,6 +273,8 @@ free_tree (tree node)
       break;
 
     case tcl_statement:
+      if (code == FUNCTION_PROTO)
+        free_tree (TREE_FUNCTION_PROTO_CCALL (node));
       break;
 
     case tcl_expression:
@@ -461,5 +466,6 @@ free_list (tree lst)
           ptr = tmpptr;
         }
     }
+  free (lst);
 }
 

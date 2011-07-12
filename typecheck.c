@@ -60,7 +60,22 @@ typecheck_constant (tree cst)
   tree lhs, rhs;
   int ret = 0;
 
-  assert (TREE_CODE (cst) == ASSIGN_EXPR, 0);
+  assert (TREE_CODE (cst) == ASSIGN_EXPR 
+          || TREE_CODE (cst) == IDENTIFIER, 0);
+
+  if (TREE_CODE (cst) == IDENTIFIER)
+    {
+      if (TREE_TYPE (cst) == NULL ||
+          type_defined (TREE_STRING_CST (TREE_TYPE_NAME (TREE_TYPE (cst))))
+          == NULL)
+        {
+          error_loc (TREE_LOCATION (cst),
+                     "Constant of unknown type found");
+          return 1;
+        }
+
+      return 0;
+    }
 
   /* XXX At the time being we assume that the constants could
      be only a list of string expressions. Seriously:
@@ -68,7 +83,6 @@ typecheck_constant (tree cst)
   lhs = TREE_OPERAND (cst, 0);
   rhs = TREE_OPERAND (cst, 1);
 
-  /* FIXME Check possible redefinitions.  */
   if (TREE_TYPE (rhs) == NULL)
     ret = typecheck_expression (rhs, NULL, NULL);
 
@@ -118,8 +132,8 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars)
                  entries)
     {
       ret += typecheck_stmt (tel->element, 
-                             TREE_STMT_LIST_VARS (stmt_list), 
-                             ext_vars);
+                             ext_vars,
+                             TREE_STMT_LIST_VARS (stmt_list));
     }
 
   return ret;
@@ -148,6 +162,32 @@ is_var_in_list (tree var, tree lst)
 
   return NULL;
 }
+
+static inline tree
+is_var_in_consts (tree var)
+{
+  struct tree_list_element *  tel;
+  
+  assert (TREE_CODE (var) == IDENTIFIER, "Variable expected");
+
+  if (constant_list == NULL)
+    return NULL;
+
+  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (constant_list), entries)
+    {
+      tree cst_var = TREE_CODE (tel->element) == ASSIGN_EXPR
+                     ? TREE_OPERAND (tel->element, 0)
+                     : tel->element;
+
+      if (strcmp (TREE_STRING_CST (TREE_ID_NAME (var)),
+                  TREE_STRING_CST (TREE_ID_NAME (cst_var))) == 0)
+        return cst_var;
+    }
+
+  return NULL;
+}
+
+
 
 int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars)
@@ -241,7 +281,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 
         struct tree_list_element *  vars_first;
         struct tree_list_element *  ext_last;
-        struct tree_list_element *  tel;
+        //struct tree_list_element *  tel;
 
 
         ret = typecheck_expression (cond, ext_vars, vars);
@@ -351,8 +391,8 @@ type_list_from_args (tree args, tree ext_vars, tree vars)
 
       if (ret != 0)
         {
-          return NULL;
           free_list (type_list);
+          return NULL;
         }
 
       tree_list_append (type_list, TREE_TYPE (tel->element));
@@ -368,6 +408,7 @@ match_proto_name_args (tree name, tree args)
 
   assert (TREE_CODE (name) == STRING_CST
           && TREE_CODE (args) == LIST, 0);
+  
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (function_proto_list), entries)
     {
       if (strcmp (TREE_STRING_CST (name), 
@@ -420,6 +461,12 @@ try_implicit_conversion (tree to_type, tree expr, tree *  container)
   tree proto_args, proto;
     
   assert (expr != NULL && container != NULL, 0);
+  
+  if (TREE_TYPE (expr) == to_type)
+    {
+      *container = expr;
+      return 0;
+    }
 
   if (to_type == integer_type_node)
     func_name = make_string_cst_str ("int"); 
@@ -432,12 +479,6 @@ try_implicit_conversion (tree to_type, tree expr, tree *  container)
   else
     unreachable ("Attempt to insert an implicit conversion to invalid type");
   
-  if (TREE_TYPE (expr) == to_type)
-    {
-      *container = expr;
-      return 0;
-    }
-
    /* Try to insert a conversion function.  */
    proto_args = xmake_function_proto_args (1, TREE_TYPE (expr));
    proto = match_proto_name_ret_args (func_name, to_type, proto_args);
@@ -445,8 +486,8 @@ try_implicit_conversion (tree to_type, tree expr, tree *  container)
    if (proto == NULL)
      {
        error_loc (TREE_LOCATION (expr), 
-                  "Cannot find a function that would make a conversion "
-                  "to the tpye `%s' for the following expression:");
+                  "Cannot convert the following expression to `%s':",
+                  TREE_STRING_CST (func_name));
        print_expression (stderr, expr);
        fprintf (stderr, "\n");
        ret = 1;
@@ -507,6 +548,24 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       {
         tree t = type_list_from_args (TREE_OPERAND (expr, 1), ext_vars, vars);
         tree proto;
+        
+        /*struct tree_list_element *  tel;
+        TAILQ_FOREACH  (tel, &TREE_LIST_QUEUE (function_proto_list), entries)
+          {
+            struct tree_list_element * ptr;
+            fprintf (stderr, "name = %s ", 
+                     TREE_STRING_CST (TREE_OPERAND (tel->element,0)));
+            fprintf (stderr, "ret = %s ", 
+                     TREE_STRING_CST (TREE_TYPE_NAME (TREE_OPERAND (tel->element,1))));
+            
+            TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (TREE_OPERAND (tel->element, 2)), entries)
+              {
+                fprintf (stderr, "%s, ", TREE_STRING_CST (TREE_TYPE_NAME (ptr->element)));
+              }
+            fprintf (stderr, "\n");
+          }
+            fprintf (stderr, "\n");
+            fprintf (stderr, "\n");*/
 
         if (t == NULL)
           {
@@ -541,8 +600,11 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
     case IDENTIFIER:
       {
         tree var;
+        
+        /* The order of checking *is* important.  */
         if ((var = is_var_in_list (expr, vars)) != NULL
-            || (var = is_var_in_list (expr, ext_vars)) != NULL)
+            || (var = is_var_in_list (expr, ext_vars)) != NULL
+            || (var = is_var_in_consts (expr)) != NULL)
           {
             assert (TREE_TYPE (var) != NULL, 0);
             /* XXX save link to the VAR, because unfortunately
@@ -588,7 +650,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
     case MINUS_EXPR:
     case DIV_EXPR:
     case MULT_EXPR:
-    case EQ_EXPR:
     case GT_EXPR:
     case LT_EXPR:
     case GE_EXPR:
@@ -617,7 +678,32 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
           }
         else
           {
-            fprintf (stderr, "%s, result = %i\n", __func__, t);
+            return 1;
+          }
+      }
+      break;
+    case EQ_EXPR:
+      {
+        tree lhs = TREE_OPERAND (expr, 0);
+        tree rhs = TREE_OPERAND (expr, 1);
+        
+        ret += typecheck_expression (lhs, ext_vars, vars);
+        ret += typecheck_expression (rhs, ext_vars, vars);
+
+        if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
+          return 1;
+
+        /* XXX We set the result of the expression to int, however
+           we do not check if we have an appropriate conversion
+           function.  */
+        if (TREE_TYPE (lhs) == TREE_TYPE (rhs))
+          TREE_TYPE (expr) = integer_type_node;
+        else
+          {
+            /* FIXME We can try to be smart here, but I am not really
+               sure that we want it. For the time being produce an error.  */
+            error_loc (TREE_LOCATION (expr),
+                       "Comparing two incompatible types");
             return 1;
           }
       }

@@ -169,6 +169,10 @@ type_lists_eq (tree tal, tree tar)
   lptr = TAILQ_FIRST (&TREE_LIST_QUEUE (tal));
   TAILQ_FOREACH (rptr, &TREE_LIST_QUEUE (tar), entries)
     {
+      /*fprintf (stderr, "comparing '%s' and '%s'\n",
+               TREE_STRING_CST (TREE_TYPE_NAME (lptr->element)),
+               TREE_STRING_CST (TREE_TYPE_NAME (rptr->element)));*/
+            
       if (lptr->element != rptr->element)
         return false;
 
@@ -359,7 +363,6 @@ function_exists (const char * str)
 }
 
 
-/* XXX Currently we support only strlist constants.  */
 tree
 constant_exists (const char * str)
 {
@@ -370,11 +373,13 @@ constant_exists (const char * str)
   TAILQ_FOREACH (tl, &TREE_LIST_QUEUE (constant_list), entries)
     {
       tree t;
-      assert (TREE_CODE (tl->element) == ASSIGN_EXPR, 
-              "Constant should be defined using assign_expr");
+      assert (TREE_CODE (tl->element) == ASSIGN_EXPR
+              || TREE_CODE (tl->element) == IDENTIFIER, 
+              "Constant should be assignemnt or identifier");
       
-      t = TREE_OPERAND (tl->element, 0);
-      assert (TREE_CODE (t) == IDENTIFIER, 0);
+      t = TREE_CODE (tl->element) == ASSIGN_EXPR
+          ? TREE_OPERAND (tl->element, 0)
+          : tl->element;
 
       if (strcmp (TREE_STRING_CST (TREE_ID_NAME (t)), str) == 0)
         return tl->element;

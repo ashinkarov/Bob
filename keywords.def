@@ -17,6 +17,8 @@
    
 KEYWORD (args,      "args")
 KEYWORD (assert,    "assert")
+KEYWORD (ccall,     "ccall")
+KEYWORD (const,     "const")
 KEYWORD (else,      "else")
 KEYWORD (expand,    "expand")
 KEYWORD (for,       "for")
@@ -26,10 +28,13 @@ KEYWORD (in,        "in")
 KEYWORD (int,       "int")
 KEYWORD (list,      "list")
 KEYWORD (name,      "name")
+KEYWORD (proto,     "proto")
+KEYWORD (ret,       "ret")
 KEYWORD (str,       "str")
 KEYWORD (strlist,   "strlist")
 KEYWORD (type,      "type")
-KEYWORD (void,      "void") /* Do we really need that?  */
+KEYWORD (void,      "void")
+
 
 #if 0
    One of the possible scenarios how to quickly sort the list could be

@@ -1,4 +1,41 @@
-type node;
+type node_t;
+type shape_t;
+type hidden_t;
+type unique_t;
+type register_t;    /* Or not, what does *REG mean in icm.m4?  */
+type shared_t;      /* Again, what does *SCO mean in icm.m4?   */
+type usage_t;
+type bit_t;
+
+const shape_t SCL;
+const shape_t AKS;
+const shape_t AKD;
+const shape_t AUD;
+const hidden_t NHD;
+const hidden_t HID;
+const unique_t NUQ;
+const unique_t UNQ;
+const register_t INT;
+const register_t FLO;
+const shared_t SHR;
+const shared_t GLO;
+const usage_t TPM;   /*  Thread param */
+const usage_t TPA;   /*  Thread param Thread arg */
+const usage_t TAG;   /*  Thread arg */
+const usage_t TPO;   /*  Thread out param */
+const usage_t FTA;   /*  Funtion param thread arg */
+const usage_t FPM;   /*  Funtion param */
+const usage_t FPA;   /*  Funtion param function arg */
+const usage_t FPO;   /*  Funtion out param */
+const usage_t FAG;   /*  Funtion arg */
+const usage_t NON;   /*  None of the above XXX How is it different from ___ ??  */
+const bit_t YES;
+const bit_t NO;      /* These are really strange name for the bit constants... */ 
+
+proto name="shape"  ret=shape_t  args=[node_t x] ccall="GetShapeClass";
+proto name="hidden" ret=hidden_t args=[node_t x] ccall="GetHiddenClass";
+proto name="unique" ret=unique_t args=[node_t x] ccall="GetUniqueClass";
+proto name="str"    ret=str      args=[node_t x] ccall="NodeToString";
 
 /* This is an expansion for macros:
    SAC_ND_A_DESC
@@ -10,7 +47,7 @@ type node;
          instead of SAC_ND_DECL__DESC__UNDEF
 */
 strlist desc = ["A_DESC", "A_DESC_NULL", "A_DESC_NAME", "DECL__DESC"];
-expand name="SAC_ND_<desc>" args=[node nd] 
+expand name="SAC_ND_<desc>" args=[node_t nd] 
 {
   if (shape (nd) == SCL && hidden (nd) == NHD
       || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
@@ -19,7 +56,7 @@ expand name="SAC_ND_<desc>" args=[node nd]
     generate "SAC_ND_<desc>__DEFAULT (%1)" % [nd];
 }
 
-expand name="SAC_ND_A_DESC_DIM" args=[node nd]
+expand name="SAC_ND_A_DESC_DIM" args=[node_t nd]
 {
   if (shape (nd) == AUD)
     generate "SAC_ND_A_DESC_DIM__DEFAULT (%1)" % [nd];
@@ -28,7 +65,7 @@ expand name="SAC_ND_A_DESC_DIM" args=[node nd]
 }
 
 strlist sizeshape = ["SIZE", "SHAPE"];
-expand name="SAC_ND_A_MIRROR_<sizeshape>" args=[node nd]
+expand name="SAC_ND_A_MIRROR_<sizeshape>" args=[node_t nd]
 {
   if (ismember (shape (nd), [AKD, AUD]))
     generate "SAC_ND_A_DESC_<sizeshape>__DEFAULT (%1)" % [nd];
@@ -37,7 +74,7 @@ expand name="SAC_ND_A_MIRROR_<sizeshape>" args=[node nd]
 }
 
 strlist dimsize = ["A_MIRROR_DIM", "A_MIRROR_SIZE", "PRINT_SHAPE", "TYPE"];
-expand name="SAC_ND_<dimsize>" args=[node nd]
+expand name="SAC_ND_<dimsize>" args=[node_t nd]
 {
   if (shape (nd) == SCL)
     generate "SAC_ND_<dimsize>__SCL (%1)" % [nd];
@@ -45,7 +82,7 @@ expand name="SAC_ND_<dimsize>" args=[node nd]
     generate "SAC_ND_<dimsize>__DEFAULT (%1)" % [nd];
 }
 
-expand name="SAC_ND_A_MIRROR_SHAPE" args=[node nd]
+expand name="SAC_ND_A_MIRROR_SHAPE" args=[node_t nd]
 {
   if (ismemeberof (shape (nd), [AKS, AKD]))
     generate "SAC_ND_A_MIRROR_SHAPE__DEFAULT (%1)" % [nd];
@@ -54,13 +91,13 @@ expand name="SAC_ND_A_MIRROR_SHAPE" args=[node nd]
 }
 
 strlist dimsizefield = ["A_DIM", "A_SIZE", "A_FIELD", "DESC_TYPE"];
-expand name="SAC_ND_<dimsizefield>" args=[node nd]
+expand name="SAC_ND_<dimsizefield>" args=[node_t nd]
 {
   generate "SAC_ND_<dimsizefield>__DEFAULT";
 }
 
 /* FIXME broken naming convention here. Any reason?  */
-expand name="SAC_ND_A_FIELD_UNBOX" args=[node nd]
+expand name="SAC_ND_A_FIELD_UNBOX" args=[node_t nd]
 {
   if (shape (nd) == SCL)
     generate "SAC_ND_A_FIELD (%1)" % [nd];
@@ -68,7 +105,7 @@ expand name="SAC_ND_A_FIELD_UNBOX" args=[node nd]
     generate "SAC_ND_A_FIELD__BOXED (%1)" % [nd];
 }
 
-expand name="SAC_ND_A_RC" args=[node nd]
+expand name="SAC_ND_A_RC" args=[node_t nd]
 {
   if (shape (nd) == SCL && hidden (nd) == NHD && unique (nd) == NUQ 
       || unique (nd) == UNQ)
@@ -77,7 +114,7 @@ expand name="SAC_ND_A_RC" args=[node nd]
     generate "SAC_ND_A_RC__DEFAULT (%1)" % [nd];
 }
 
-expand name="SAC_ND_A_SHAPE" args=[node nd]
+expand name="SAC_ND_A_SHAPE" args=[node_t nd]
 {
   if (shape (nd) == SCL)
     generate "SAC_ND_A_SHAPE__SCL (%1)" % [nd];
@@ -89,7 +126,7 @@ expand name="SAC_ND_A_SHAPE" args=[node nd]
 }
 
 strlist rw = ["READ", "WRITE"];
-expand name="SAC_ND_<rw>" args=[node nd]
+expand name="SAC_ND_<rw>" args=[node_t nd]
 {
   if (shape (nd) == SCL)
     generate "SAC_ND_<rw>__SCL (%1)" % [nd];
@@ -99,7 +136,7 @@ expand name="SAC_ND_<rw>" args=[node nd]
     generate "SAC_ND_<rw>__DEFAULT (%1)" % [nd];
 }
 
-expand name="SAC_ND_WRITE_COPY" args=[node nd]
+expand name="SAC_ND_WRITE_COPY" args=[node_t nd]
 {
   if (hidden (nd) == HID)
     generate "SAC_ND_WRITE_COPY__HID (%1)" % [nd];
@@ -108,7 +145,7 @@ expand name="SAC_ND_WRITE_COPY" args=[node nd]
   /* XXX What happens if hidden (nd) is empty?  */
 }
 
-expand name="SAC_ND_TYPEDEF" args=[node nd]
+expand name="SAC_ND_TYPEDEF" args=[node_t nd]
 {
   if (hidden (nd) == HID)
     generate "SAC_ND_TYPEDEF__HID (%1)" % [nd];
@@ -120,7 +157,7 @@ expand name="SAC_ND_TYPEDEF" args=[node nd]
    of expanded macros could be unified.  */
 strlist params = ["PARAM_in", "PARAM_out", "ARG_in", 
                   "ARG_out", "RET_out", "PARAM_inout"];
-expand name="SAC_ND_<params>" args=[node nd] 
+expand name="SAC_ND_<params>" args=[node_t nd] 
 {
   if (shape (nd) == SCL && hidden (nd) == NHD
       || ismemeber (shape (nd), [SCL, AKS]) && unique (nd) == UNQ)
@@ -132,7 +169,7 @@ expand name="SAC_ND_<params>" args=[node nd]
 /* I like the prefix named DAO :)  */
 strlist dao = ["ALLOC", "ALLOC_BEGIN", "ALLOC_END", 
                "REALLOC_BEGIN", "REALLOC_END"];
-expand name="SAC_ND_<dao>" args=[node nd]
+expand name="SAC_ND_<dao>" args=[node_t nd]
 {
   if (ismember (shape (nd), [SCL, AKS]))
     generate "SAC_ND_<dao>__DAO (%1)" % [nd];

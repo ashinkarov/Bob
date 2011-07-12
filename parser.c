@@ -67,7 +67,11 @@ tree handle_expr_list (struct parser *);
 tree handle_primary_expr (struct parser *);
 tree handle_postfix_expr (struct parser *);
 tree handle_conditional_expr (struct parser *);
+/* Handle statement type <id>  */
 tree handle_type_definition (struct parser *);
+/* Handle the case when we need to parse a type
+   in the function/expand args or in case of constant.  */
+tree handle_type (struct parser *);
 tree handle_function_args (struct parser *);
 tree handle_fun (struct parser *);
 tree handle_args (struct parser *);
@@ -603,6 +607,31 @@ handle_type_definition (struct parser *parser)
 }
 
 
+tree
+handle_type (struct parser *  parser)
+{
+  struct token *  tok = parser_get_token (parser);
+  tree type= error_mark_node;
+
+  if (token_class (tok) != tok_id && token_class (tok) != tok_keyword)
+    {
+      error_loc (token_location (tok), "type expected");
+      parser_unget (parser);
+      return error_mark_node;
+    }
+
+  type = type_defined (token_as_string (tok));
+  if (!type)
+    {
+      error_loc (token_location (tok), 
+                 "unknown type `%s' used", token_as_string (tok));
+      parser_unget (parser);
+      return error_mark_node;
+    }
+
+  return type;
+}
+
 /* handle the list (<type> <name> ,) function checks
    that type is present and is appropriate and returns
    a list of variables typed with the types.  */
@@ -626,25 +655,17 @@ handle_function_args (struct parser *parser)
           goto comma_or_rsquare;
         }
 
-      if (token_class (tok) != tok_id && token_class (tok) != tok_keyword)
+      parser_unget (parser);
+      if ((type = handle_type (parser)) == error_mark_node)
         {
-          error_loc (token_location (tok), "type expected");
-          parser_get_token (parser);           /* eat possible variable  */
+          parser_get_token (parser); /* eat type  */
+          parser_get_token (parser); /* eat variable  */
           error_occured = true;
           goto comma_or_rsquare;
         }
 
-      /* type */
-      type = type_defined (token_as_string (tok));
-      if (!type)
-        {
-          error_loc (token_location (tok), 
-                     "unknown type `%s' used", token_as_string (tok));
-          parser_get_token (parser);
-          error_occured = true;
-          goto comma_or_rsquare;
-        }
-      
+      //tok = parser_get_token (parser);
+      //token_print (tok);
       /* variable */
       if (parser_expect_tclass (parser, tok_id))
         {
@@ -1318,23 +1339,189 @@ skip:
 tree 
 handle_strlist (struct parser *  parser)
 {
-  struct token *  tok = parser_get_token (parser);
+  struct location loc = token_location (parser_get_token (parser));
   tree expr;
   
   parser_unget (parser);
   expr = handle_expression (parser);
 
-
   if (expr == error_mark_node || TREE_CODE (expr) != ASSIGN_EXPR)
     {
-      error_loc (token_location (tok), 
-                 "invalid expression for strlist found.");
+      error_loc (loc, "invalid expression for strlist found");
       return error_mark_node;
     }
   
   return expr;
 }
 
+tree 
+handle_const (struct parser *  parser)
+{
+  struct location loc = token_location (parser_get_token (parser));
+  tree type, expr;
+  
+  parser_unget (parser);
+  if ((type = handle_type (parser)) == error_mark_node)
+    goto error;
+  
+  expr = handle_expression (parser);
+
+  if (TREE_CODE (expr) == ASSIGN_EXPR)
+    TREE_TYPE (TREE_OPERAND (expr, 0)) = type;
+  else if (TREE_CODE (expr) == IDENTIFIER)
+    TREE_TYPE (expr) = type;
+  else
+    {
+      error_loc (loc, "invalid expression for constant found");
+      goto error;
+    }
+  
+  return expr;
+error:
+  parser_get_until_tval (parser, tv_semicolon);
+  parser_get_token (parser);
+  return error_mark_node;
+}
+
+
+tree
+handle_proto (struct parser *  parser)
+{
+  struct token *  tok = parser_get_token (parser);
+  struct location loc = token_location (tok);
+  tree name = error_mark_node, 
+       ret = error_mark_node, 
+       args = error_mark_node,
+       ccall = error_mark_node;
+
+  parser_unget (parser);
+
+  while (token_class (tok) == tok_keyword)
+    {
+      switch (token_value (tok))
+        {
+          tree t;
+        case tv_name:
+          t = handle_fun (parser);
+          if (t != error_mark_node && name == error_mark_node)
+            {
+              /* Get rid od '""  */
+              char * fname = TREE_STRING_CST (t);
+              char * fnew;
+              const int sz = strlen (fname) -1;
+              
+              fnew = (char *) malloc (sizeof (char) * sz);
+              fnew = strncpy (fnew, &fname[1], sz - 1);
+              fnew[sz] = '\0';
+              free (fname);
+              TREE_STRING_CST (t) = fnew;
+              name = t;
+            }
+          else
+            {
+              error_loc (loc, "failed to read name of proto or name "
+                              "was specified more than once");
+              goto out;
+            }
+          break;
+        case tv_ccall:
+          parser_get_token (parser);
+          if (!parser_expect_tval (parser, tv_assign))
+            goto out;
+
+          parser_get_token (parser); /* eat '='  */
+
+          if (!parser_expect_tclass (parser, tok_string))
+            goto out;
+
+          tok = parser_get_token (parser);
+          t = make_string_cst_tok (tok);
+
+          if (t != error_mark_node && ccall == error_mark_node)
+            ccall = t;
+          else
+            {
+              error_loc (loc, "failed to read ccall of proto or ccall "
+                              "was specified more than once");
+              goto out;
+            }
+          break;
+        case tv_args:
+          t = handle_args (parser);
+          if (t != error_mark_node && args == error_mark_node)
+            {
+              /* FIXME actually we need only types in the
+                 definition.  */
+              struct tree_list_element *  tel;
+              TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (t), entries)
+                {
+                  tree type;
+                  assert (TREE_TYPE (tel->element) != NULL, 0);
+                  type = TREE_TYPE (tel->element);
+                  free (tel->element);
+                  tel->element = type;
+                }
+              args = t;
+            }
+          else
+            {
+              error_loc (loc, "failed to read args of proto or args "
+                              "were specified more than once");
+              goto out;
+            }
+          break;
+        case tv_ret:
+          parser_get_token (parser);
+          if (!parser_expect_tval (parser, tv_assign))
+            goto out;
+
+          parser_get_token (parser); /* eat '=' */
+           
+          if ((t = handle_type (parser)) == error_mark_node)
+            goto out;
+           
+          if (t != error_mark_node && ret == error_mark_node)
+            ret = t;
+          else
+            {
+              error_loc (loc, "failed to read ret of proto or ret "
+                              "was specified more than once");
+              goto out;
+            }
+          break;
+        default:
+          goto out;
+        }
+
+      tok = parser_get_token (parser);
+      parser_unget (parser);
+    }
+
+out:
+  if (name == error_mark_node || ret == error_mark_node
+      || args == error_mark_node || ccall == error_mark_node)
+    {
+      error_loc (loc, "error parsing proto definition");
+      parser_get_until_tval (parser, tv_semicolon);
+      return error_mark_node;
+    }
+
+  if (!parser_expect_tval (parser, tv_semicolon))
+    {
+      parser_get_until_tval (parser, tv_semicolon);
+      return error_mark_node;
+    }
+  else
+    {
+      tree proto = make_tree (FUNCTION_PROTO);
+      TREE_FUNCTION_PROTO_CCALL (proto) = ccall;
+      TREE_OPERAND_SET (proto, 0, name);
+      TREE_OPERAND_SET (proto, 1, ret);
+      TREE_OPERAND_SET (proto, 2, args);
+      TREE_LOCATION (proto) = loc;
+      return proto;
+    }
+}
 
 /* Top level function to parse the file.  */
 int
@@ -1376,14 +1563,58 @@ parse (struct parser *parser)
                           "Assign expression expected");
                   tree t = TREE_ID_NAME (TREE_OPERAND (res, 0));
                   if (constant_exists (TREE_STRING_CST (t)) != NULL)
-                    error ("deuplicate constant definition for "
+                    error ("duplicate constant definition for "
                            "variable `%s' found", TREE_STRING_CST (t));
                   else
                     tree_list_append (constant_list, res);
                 }
               break;
 
+            case tv_const:
+              if ((res = handle_const (parser)) != error_mark_node)
+                {
+                  assert (TREE_CODE (res) == ASSIGN_EXPR
+                          || TREE_CODE (res) == IDENTIFIER,
+                          "Assign or id expression expected");
+
+                  tree t = TREE_CODE (res) == ASSIGN_EXPR
+                           ? TREE_ID_NAME (TREE_OPERAND (res, 0))
+                           : TREE_ID_NAME (res);
+                  if (constant_exists (TREE_STRING_CST (t)) != NULL)
+                    error ("duplicate constant definition for "
+                           "variable `%s' found", TREE_STRING_CST (t));
+                  else
+                    tree_list_append (constant_list, res);
+                }
+              break;
+            
+            case tv_proto:
+              if ((res = handle_proto (parser)) != error_mark_node)
+                {
+                  tree proto;
+                  tree name, ret, args;
+
+                  assert (TREE_CODE (res) == FUNCTION_PROTO,
+                          "Function prototype expected");
+
+                  name = TREE_OPERAND (res, 0);
+                  ret =  TREE_OPERAND (res, 1);
+                  args = TREE_OPERAND (res, 2);
+                  
+                  if ((proto = function_proto_exists (name, ret, args))
+                      != NULL)
+                    {
+                      warning_loc (TREE_LOCATION (res),
+                                   "redefining ccall of the prototype");
+                      TREE_FUNCTION_PROTO_CCALL (proto) 
+                        = TREE_FUNCTION_PROTO_CCALL (res);
+                    }       
+                  else
+                    tree_list_append (function_proto_list, res);
+                }
+              break;
             default:
+              unreachable (0);
               break;
             }
           break;
@@ -1445,10 +1676,14 @@ main (int argc, char *argv[])
   parser_init (parser, lex);
   parse (parser);
 
-  /*if (error_count == 0)
-    print_all (stdout);*/
-  
+  if (error_count != 0)
+    goto cleanup;
+
   typecheck ();
+
+  if (error_count != 0)
+    goto cleanup;
+
   print_all (stdout);
 
 cleanup:

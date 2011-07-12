@@ -42,6 +42,7 @@ tree expand_exists (const char *);
 tree constant_exists (const char *);
 bool type_lists_eq (tree, tree);
 tree make_function_proto_args (int, va_list);
+tree function_proto_exists (tree, tree, tree);
 
 
 #endif /* __GLOBAL_H__  */

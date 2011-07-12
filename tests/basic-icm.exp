@@ -7,15 +7,15 @@ type ARGLIST  {list   -> ccall "GetList"};
 
 
 /* How to expand an ICM called ND_FUN_DECL.  */
-expand name="ND_FUN_DECL" args=[ID ename, NT ret, INT cnt, ARGLIST vlist]
+expand name="ND_FUN_DECL" args=[ID ename, NT ret_type, INT cnt, ARGLIST vlist]
 {
     /* Assert that length of VLIST parameter is cnt * 3.  */
     assert length (vlist) == 3 * cnt;
     
     /* Depending on the RET parameter we decide
        whether we have a void type or SAC_ND_TYPE.  */
-    ftype = str (ret)[0] == '\0' ? "void" 
-                                 : "SAC_ND_TYPE (%1)" % [ret];
+    ftype = str (ret_type)[0] == '\0' ? "void" 
+                                      : "SAC_ND_TYPE (%1)" % [ret_type];
 
     /* Divide a list of elements VLIST into triplets
        and convert them into the string SAC_ND_PARAM (%1, %2, %3).  */
@@ -28,22 +28,22 @@ expand name="ND_FUN_DECL" args=[ID ename, NT ret, INT cnt, ARGLIST vlist]
 }
 
 
-expand name="ND_FUN_DEF_BEGIN" args=[ID ename, NT ret, INT cnt, ARGLIST vlist]
+expand name="ND_FUN_DEF_BEGIN" args=[ID ename, NT ret_type, INT cnt, ARGLIST vlist]
 {
     assert length (vlist) == 3 * cnt;
-    ftype = str (ret)[0] == '0' ? "void" 
-                               : "SAC_ND_TYPE_NT (%1)" % [ret];
+    ftype = str (ret_type)[0] == '\0' ? "void" 
+                                      : "SAC_ND_TYPE_NT (%1)" % [ret_type];
     vaargs = [];
     for [tag, base, nt] in vlist
         vaargs += "SAC_ND_PARAM_%1 (%2, %3)" % [tag, base, nt];
       
-    generate "SAC_ND_FUN_DEF_BEGIN (%1, %2, %3)" % [ename, tag, vaargs];
+    generate "SAC_ND_FUN_DEF_BEGIN (%1, %2, %3)" % [ename, ftype, vaargs];
     generate "{";
-    generate "SAC_HM_DEFINE_THREAD_STATUS( SAC_HM_single_threaded)";
+    generate "SAC_HM_DEFINE_THREAD_STATUS (SAC_HM_single_threaded)";
 }
 
 
-expand name="ND_FUN_DEF_END" args=[ID ename, NT ret, INT cnt, ARGLIST vlist]
+expand name="ND_FUN_DEF_END" args=[ID ename, NT ret_type, INT cnt, ARGLIST vlist]
 {
     generate "}";
     generate "SAC_ND_FUN_DEF_END2 ()";
