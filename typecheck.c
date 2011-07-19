@@ -19,15 +19,6 @@
 #include "typecheck.h"
 #include "print.h"
 
-#define COPY_TYPE_AND_ATTRS(lhs, rhs) \
-  do { \
-    TREE_TYPE (lhs) = TREE_TYPE (rhs); \
-    TREE_CONSTANT (lhs) = TREE_CONSTANT (rhs); \
-  } while (0)
-
-#define TYPE_AND_ATTRS_EQ(lhs, rhs) \
-  (TREE_TYPE (lhs) == TREE_TYPE (rhs) \
-   && TREE_CONSTANT (lhs) == TREE_CONSTANT (rhs))
 
 int
 typecheck ()
@@ -135,7 +126,6 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars)
                              ext_vars,
                              TREE_STMT_LIST_VARS (stmt_list));
     }
-
   return ret;
 }
 
@@ -155,6 +145,7 @@ is_var_in_list (tree var, tree lst)
      lists of nested blocks.  */ 
   TAILQ_FOREACH_REVERSE (tel, &TREE_LIST_QUEUE (lst), tree_list, entries)
     {
+      //fprintf (stderr, "-- var %s\n", TREE_STRING_CST (TREE_ID_NAME (var)));
       if (strcmp (TREE_STRING_CST (TREE_ID_NAME (var)),
                   TREE_STRING_CST (TREE_ID_NAME (tel->element))) == 0)
         return tel->element;
@@ -296,14 +287,14 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
           {       
             int i = 0;
             print_expression (stderr, tel->element);
-            fprintf (stderr, "%i\n", i++);
+            fprintf (stderr, " %i\n", i++);
           }        
         
         TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (ext_vars), entries)
           {
             int i = 10;
             print_expression (stderr, tel->element);
-            fprintf (stderr, "%i\n", i++);
+            fprintf (stderr, " %i\n", i++);
           }*/
  
         
@@ -317,16 +308,18 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
           res = ext_vars;
         else
           {
+            struct tree_list * ext_tl = &TREE_LIST_QUEUE (ext_vars);
+            struct tree_list * vars_tl = &TREE_LIST_QUEUE (vars);
+            
             assert (TAILQ_NEXT (ext_last, entries) == NULL
                     && TAILQ_PREV (vars_first, tree_list, entries) == NULL, 0);
 
-            TAILQ_NEXT (ext_last, entries) = vars_first;
-            TAILQ_PREV (vars_first, tree_list, entries) = ext_last;
-            TAILQ_LAST (&TREE_LIST_QUEUE (ext_vars), tree_list) 
-                = TAILQ_LAST (&TREE_LIST_QUEUE (vars), tree_list);
+            *ext_tl->tqh_last = vars_tl->tqh_first;
+            vars_tl->tqh_first->entries.tqe_prev = ext_tl->tqh_last;
+            ext_tl->tqh_last = vars_tl->tqh_last;
             res = ext_vars;
           }
-
+        
         assert ((if_branch = TREE_OPERAND (stmt, 1)) != NULL, 0);
         ret += typecheck_stmt_list (if_branch, res);
 
@@ -336,25 +329,26 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 
         if (ext_last != NULL && vars_first != NULL)
           {
-            TAILQ_NEXT (ext_last, entries) = NULL;
-            TAILQ_PREV (vars_first, tree_list, entries) = NULL;
-            TAILQ_LAST (&TREE_LIST_QUEUE (ext_vars), tree_list) = ext_last;
+            struct tree_list * ext_tl = &TREE_LIST_QUEUE (ext_vars);
+
+            ext_last->entries.tqe_next = NULL;
+            ext_tl->tqh_last = &ext_last->entries.tqe_next;
+            *vars_first->entries.tqe_prev = NULL;
           }
-        
-        /*TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (vars), entries)
-          {       
-            int i = 100;
-            print_expression (stderr, tel->element);
-            fprintf (stderr, "%i\n", i++);
-          }        
-        
-        TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (ext_vars), entries)
+        /*TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (ext_vars), entries)
           {
             int i = 110;
             print_expression (stderr, tel->element);
-            fprintf (stderr, "%i\n", i++);
-          }*/
+            fprintf (stderr, " %i\n", i++);
+          }
 
+        TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (vars), entries)
+          {       
+            int i = 100;
+            print_expression (stderr, tel->element);
+            fprintf (stderr, " %i\n", i++);
+          }*/
+ 
       }
       break;
     case FOR_STMT:
@@ -501,7 +495,8 @@ try_implicit_conversion (tree to_type, tree expr, tree *  container)
        TREE_OPERAND_SET (cexp, 0, TREE_OPERAND (proto, 0));
        tree_list_append (lst, expr);
        TREE_OPERAND_SET (cexp, 1, lst);
-       *container = cexp; 
+       TREE_TYPE (cexp) = to_type;
+       *container = cexp;
        ret = 0;
      }
 
@@ -831,6 +826,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
               }
 
             TREE_TYPE (expr) = string_type_node;
+            TREE_CONSTANT (expr) = TREE_CONSTANT (lhs);
           }
         /* two integers means modulo.  */
         else if ((TREE_TYPE (lhs) == integer_type_node 

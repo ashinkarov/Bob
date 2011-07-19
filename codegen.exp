@@ -1,0 +1,99 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+  
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+  
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
+type tree_t;
+type tree_code_t;
+type code_class_t;
+
+const code_class_t tcl_expression;
+
+#define DEF_TREE_CODE(a,b,c,d) const tree_code_t a;
+#include "tree.def"
+
+proto name="typename" ret=str args=[tree_t x] ccall="typename";
+proto name="argname"  ret=str args=[tree_t x] ccall="argname";
+proto name="get_block_variables" ret=tree_t args=[tree_t x] ccall="block_variables";
+proto name="tree_code" ret=tree_code_t args=[tree_t x] ccall="TREE_CODE";
+proto name="code_class" ret=code_class_t args=[tree_code_t x] ccall="TREE_CODE_CLASS";
+proto name="unreachable" ret=void args=[] ccall="unreachable";
+proto name="fun_call_args" ret=tree_t args=[tree_t x] ccall="CAL_EXPRL_ARGS";
+proto name="fun_call_name" ret=tree_t args=[tree_t x] ccall="CALL_EXPR_NAME";
+
+/* some text to add in the beginning of each expand function.  */
+expand name="__expand_header" args=[str ename]
+{
+  /* Just as an example.  */
+  generate "DBUG_ENTER ();";
+}
+
+/* some text to add in the end of each expand function.  */
+expand name="__expand_footer" args=[str ename]
+{
+  /* Just as an example.  */
+  generate "DBUG_RETURN ();";
+}
+
+/* The code generation for expand objects.  */
+expand name="__expand" args=[str ename, list arguments, tree_t stmt_block]
+{
+  /* Convert arguments from the tree form
+     into the C form: int x, char *  y,...  */
+  xargs = [];
+  for [arg] in arguments
+    xargs += "%1 %2" % [typename (arg), argname (arg)];
+
+  /* Function start and arguments.  */
+  generate "void\n%1 (%2)\n{" % [ename, xargs];
+
+  __expand_header (ename);
+  __expand_stmt_block (stmt_block);
+  __expand_footer (ename);
+  
+  generate "}";
+}
+
+/* expand the block of statements, do not print { and }.  */
+expand name="__expand_stmt_block" args=[tree_t block]
+{
+   __expand_block_variables (get_block_variables (block));
+   
+   for [stmt] in block_statements (block)
+     {
+       __expand_statement (stmt);
+       generate ";\n";
+     }
+}
+
+/* expand a single statement.  */
+expand name="__expand_stmt" args=[tree_t stmt]
+{
+  code = tree_code (stmt);
+
+  if code == CALL_EXPR
+    __expand_call_expr (stmt);
+  else if code == IF_STMT
+    __expand_if_stmt (stmt);
+  else if code == FOR_STMT
+    __expand_for_stmt (stmt);
+  else if code_class (code) == tcl_expression
+    __expand_expression (stmt);
+  else
+    unreachable ();
+}
+
+expand name="__expand_call_expr" args=[tree_t stmt]
+{
+  fname = fun_call_name (stmt);
+  xargs = fun_call_args (stmt);
+}

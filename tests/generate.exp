@@ -1,0 +1,5 @@
+
+expand name="X" args =[str txt]
+{
+    generate txt;
+}

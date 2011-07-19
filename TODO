@@ -1,0 +1,14 @@
+* We do not have VAR_DECL nodes, and we do not copy variables, so basically
+  we have a problem when we copy a function or even a statement list.
+
+* We do not check for expressions, mostly because we do not have a good 
+  solution for the type of list element.
+
+* Type of a list element when we do indexing or for operation.
+
+
+---------------------------------- DONE ---------------------------------------
+* When atomic tree is allocated we would like to store it in a special list
+  which we could free afterwards. This could simplify the mechanism of 
+  freeing. Basically we use a primitive garbage collector, whihc is implemented
+  as a hash-table of pointers. 

@@ -1,0 +1,22 @@
+expand name="X" args = [int one]
+{
+    two = one + 3;
+    three = "xx";
+    if (two > 5)
+      {
+        a = 7;
+        b = 3;
+        generate 3+b;
+      }
+    else
+      {
+         k = 5;
+         i = 8;
+         if (two == 10)
+           {
+             a = 8;
+             b = 2;
+             f (a+b);
+          }
+      }
+}

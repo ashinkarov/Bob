@@ -5,11 +5,6 @@ type ID       {str    -> ccall "GetId"};
 type INT      {int    -> ccall "GetInt"};
 type ARGLIST  {list   -> ccall "GetList"};
 
-proto name="str" ret=str args=[NT x] ccall="GetNt";
-proto name="str" ret=str args=[ID x] ccall="GetId";
-proto name="int" ret=int args=[INT x] ccall="GetId";
-proto name="length" ret=int args=[ARGLIST x] ccall="ListLength";
-
 
 /* How to expand an ICM called ND_FUN_DECL.  */
 expand name="ND_FUN_DECL" args=[ID ename, NT ret_type, INT cnt, ARGLIST vlist]
@@ -29,7 +24,7 @@ expand name="ND_FUN_DECL" args=[ID ename, NT ret_type, INT cnt, ARGLIST vlist]
         vaargs += "SAC_ND_PARAM_%1 (%2, %3)" % [tag, base, nt];
       
     /* Output the result.  */
-    generate "SAC_ND_DECL_FUN2 (%1, %2, %3)" % [ename, ftype, vaargs];
+    generate "SAC_ND_DECL_FUN2 (%1, %2, %3)" % [ename, tag, vaargs];
 }
 
 

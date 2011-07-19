@@ -66,8 +66,8 @@ struct tree_type_base
 /* Structure to store a list of tree nodes.  */
 struct tree_list_element
 {
-  tree                              element;
   TAILQ_ENTRY (tree_list_element)   entries;
+  tree                              element;
 };
 
 TAILQ_HEAD (tree_list, tree_list_element);
@@ -207,6 +207,17 @@ enum tree_global_code
   TG_MAX
 };
 
+#define COPY_TYPE_AND_ATTRS(lhs, rhs) \
+  do { \
+    TREE_TYPE (lhs) = TREE_TYPE (rhs); \
+    TREE_CONSTANT (lhs) = TREE_CONSTANT (rhs); \
+  } while (0)
+
+#define TYPE_AND_ATTRS_EQ(lhs, rhs) \
+  (TREE_TYPE (lhs) == TREE_TYPE (rhs) \
+   && TREE_CONSTANT (lhs) == TREE_CONSTANT (rhs))
+
+
 #define error_mark_node     global_tree[TG_ERROR_MARK]
 #define integer_type_node   global_tree[TG_INTEGER_TYPE]
 #define string_type_node    global_tree[TG_STRING_TYPE]
@@ -343,6 +354,8 @@ is_assignment_operator (enum token_kind tk)
 
 tree make_tree (enum tree_code);
 void free_tree (tree);
+void destroy_tree (tree);
+tree copy_tree (tree);
 void free_atomic_trees ();
 tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);
@@ -353,6 +366,7 @@ tree make_binary_op (enum tree_code, tree, tree);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 void free_list (tree);
+tree list_at_position (tree, int);
 
 #endif /* __TREE_H__  */
 

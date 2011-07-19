@@ -18,7 +18,6 @@
 #include "tree.h"
 #include "global.h"
 
-
 /* Variable that is going to be increased every 
    time when an error is happening.  */
 int error_count = 0;
@@ -27,9 +26,12 @@ int error_count = 0;
    time when an error is happening.  */
 int warning_count = 0;
 
+/* FIXME FIXME FIXME
+   We need to store all the following list in the hash-table
+   not in the list!  One of the possible hash-table implementations
+   is http://uthash.sourceforge.net  */
 
-/* FIXME do we want to store standard types here as well?
-   Table that stores user-defined types.  */
+/* Table of the types that are difined.  */
 tree type_list = NULL;
 
 /* Here we would like to store all the constants
@@ -52,6 +54,8 @@ init_global ()
   assert (type_list == NULL, "type list is already allocated");
   assert (constant_list == NULL, "constant list is already allocated");
   assert (function_list == NULL, "function list is already allocated");
+  assert (function_proto_list == NULL, 
+          "function prototype list is already allocated");
   
   type_list = make_tree (LIST);
   TAILQ_INIT (&TREE_LIST_QUEUE (type_list));
@@ -72,10 +76,10 @@ init_global ()
 void
 finalize_global ()
 {
-  free_tree (type_list);
-  free_tree (constant_list);
-  free_tree (function_list);
-  free_tree (function_proto_list);
+  destroy_tree (type_list);
+  destroy_tree (constant_list);
+  destroy_tree (function_list);
+  destroy_tree (function_proto_list);
 }
 
 void
@@ -111,7 +115,7 @@ finalize_global_tree ()
     if (global_tree[i] == error_mark_node)
       free (global_tree[i]);
     else
-      free_tree (global_tree[i]);
+      destroy_tree (global_tree[i]);
 }
 
 
@@ -165,6 +169,10 @@ type_lists_eq (tree tal, tree tar)
 
   assert (TREE_CODE (tal) == LIST 
           && TREE_CODE (tar) == LIST, 0);
+
+  if (!!TAILQ_EMPTY (&TREE_LIST_QUEUE (tal)) 
+      != !!TAILQ_EMPTY (&TREE_LIST_QUEUE (tar)))
+    return false;
 
   lptr = TAILQ_FIRST (&TREE_LIST_QUEUE (tal));
   TAILQ_FOREACH (rptr, &TREE_LIST_QUEUE (tar), entries)
@@ -292,7 +300,8 @@ type_defined (const char *  name)
 
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (type_list), entries)
     {
-      /*printf ("-- %s, %s\n", TREE_STRING_CST (TREE_USER_TYPE_NAME (tel->element)), name);*/
+      /*printf ("-- %s, %s\n", 
+                TREE_STRING_CST (TREE_USER_TYPE_NAME (tel->element)), name);*/
       if (strcmp (TREE_STRING_CST (TREE_TYPE_NAME (tel->element)), name) == 0)
         return tel->element;
     }
@@ -387,4 +396,21 @@ constant_exists (const char * str)
 
   return NULL;
 
+}
+
+void
+build_expand_prototypes ()
+{
+  struct tree_list_element *  tel;
+
+  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (function_list), entries)
+    {
+      tree name = TREE_OPERAND (tel->element, 0);
+      tree args = TREE_OPERAND (tel->element, 1);
+
+      if (TREE_CODE (tel->element) != EXPAND_STMT)
+        continue;
+      
+
+    }
 }

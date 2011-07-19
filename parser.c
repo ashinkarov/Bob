@@ -20,6 +20,7 @@
 #include "global.h"
 #include "print.h"
 #include "typecheck.h"
+#include "optimise.h"
 
 
 struct parser 
@@ -446,6 +447,7 @@ handle_primary_expr (struct parser *  parser)
                              "invalid usage of keyword %s.", 
                              token_as_string (tok));
                   parser_get_token (parser);
+                  free_tree (args);
                   return error_mark_node;
                 }
 
@@ -557,6 +559,7 @@ handle_postfix_expr (struct parser *  parser)
           if (idx == error_mark_node || !rsq)
             {
               free_tree (exp);
+              free_tree (idx);
               return error_mark_node;
             }
           
@@ -1405,14 +1408,14 @@ handle_proto (struct parser *  parser)
           t = handle_fun (parser);
           if (t != error_mark_node && name == error_mark_node)
             {
-              /* Get rid od '""  */
+              /* Get rid od both first and last quotation marks  */
               char * fname = TREE_STRING_CST (t);
               char * fnew;
               const int sz = strlen (fname) -1;
               
               fnew = (char *) malloc (sizeof (char) * sz);
               fnew = strncpy (fnew, &fname[1], sz - 1);
-              fnew[sz] = '\0';
+              fnew[sz-1] = '\0';
               free (fname);
               TREE_STRING_CST (t) = fnew;
               name = t;
@@ -1458,6 +1461,8 @@ handle_proto (struct parser *  parser)
                   tree type;
                   assert (TREE_TYPE (tel->element) != NULL, 0);
                   type = TREE_TYPE (tel->element);
+                  
+                  free_tree (TREE_ID_NAME (tel->element));
                   free (tel->element);
                   tel->element = type;
                 }
@@ -1604,6 +1609,8 @@ parse (struct parser *parser)
                   if ((proto = function_proto_exists (name, ret, args))
                       != NULL)
                     {
+                      /* FIXME if proto exists with the same ccall
+                         then most likely it is an error.  */
                       warning_loc (TREE_LOCATION (res),
                                    "redefining ccall of the prototype");
                       TREE_FUNCTION_PROTO_CCALL (proto) 
@@ -1640,7 +1647,7 @@ parse (struct parser *parser)
   //printf ("note: finished parsing.\n");
   if (error_count != 0)
     {
-      printf ("note: %i errors found.\n", error_count);
+      printf ("note: %i error(s) found.\n", error_count);
       return -3;
     }
 
@@ -1683,6 +1690,8 @@ main (int argc, char *argv[])
 
   if (error_count != 0)
     goto cleanup;
+
+  //optimise ();
 
   print_all (stdout);
 

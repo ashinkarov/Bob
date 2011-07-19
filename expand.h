@@ -63,7 +63,7 @@ extern int warning_count;
                     abort ()))
 
 #define unreachable(...)  \
-  ((void) (fprintf (stderr, "Code in %s:%d reaached impossible state.\n", \
+  ((void) (fprintf (stderr, "Code in %s:%d reached impossible state.\n", \
                     __FILE__, __LINE__), \
            xfprintf (stderr, __VA_ARGS__), \
            abort ()))
@@ -160,6 +160,7 @@ extern const char *  token_kind_name[];
 #define token_class(tok)            (tok)->tok_class
 #define token_class_as_string(tcls) token_class_name[(int) tcls]
 #define token_location(tok)         (tok)->loc
+
 
 __BEGIN_DECLS
 

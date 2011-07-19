@@ -181,7 +181,7 @@ print_statement (FILE *f, tree stmt)
 int
 print_stmt_list (FILE *f, tree stmt)
 {
-  struct tree_list_element *  tle;
+  struct tree_list_element *  tel;
   tree lst;
 
   assert (stmt != NULL
@@ -193,10 +193,29 @@ print_stmt_list (FILE *f, tree stmt)
   indent (f, level);
   fprintf (f, "{\n");
   level++;
-  TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (lst), entries)
+
+  if (TREE_STMT_LIST_VARS (stmt) == NULL)
     {
       indent (f, level);
-      print_statement (f, tle->element);
+      fprintf (f, "/* block variables: <empty>  */\n");
+    }
+  else
+    {
+      indent (f, level);
+      fprintf (f, "/* block variables: ");
+      TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (TREE_STMT_LIST_VARS (stmt)), entries)
+        {
+          print_expression (f, tel->element);
+          if (TAILQ_NEXT (tel, entries))
+            fprintf (f, ", ");
+        }
+      fprintf (f, "  */\n");
+    }
+
+  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (lst), entries)
+    {
+      indent (f, level);
+      print_statement (f, tel->element);
       fprintf (f, ";\n");
     }
   level--;
